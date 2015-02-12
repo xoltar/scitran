@@ -1,0 +1,38 @@
+# This file is templated by scitran.py.
+# Edits to the generated file will not be saved!
+
+mongo:
+    image: scitran-mongo:0
+    volumes:
+        - SCITRAN-CWD/data/mongo:/data/db
+    expose:
+        - "21707"
+    command: mongod
+api:
+    image: scitran-api:0
+    # NOTE: If these volumes change, scitran.py bootstrapping must as well.
+    volumes:
+        - SCITRAN-CWD/api:/service/config
+        - SCITRAN-CWD/code:/service/code
+        - SCITRAN-CWD/data/blocks:/service/blocks
+        - SCITRAN-CWD/data/log:/service/log
+    ports:
+        - "3031"
+    links:
+        - mongo
+    environment:
+      - PYTHONPATH=/service/code/data
+    command: uwsgi /service/config/production.ini
+nginx:
+    image: scitran-nginx:0
+    volumes:
+        - SCITRAN-CWD/nginx:/etc/nginx
+        - SCITRAN-CWD/data/log:/service/log
+        - SCITRAN-CWD/code/sdm/app:/service/web
+    ports:
+        - "80:80"
+        - "443:443"
+        - "8080:8080"
+    links:
+        - api
+    command: nginx

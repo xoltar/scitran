@@ -1,0 +1,23 @@
+{
+  "groups": [
+    {
+      "_id": "unknown",
+      "name": "Unknown",
+      "roles": [
+        {
+          "access": "admin",
+          "_id": "user1@example.com"
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "_id": "SCITRAN-EMAIL",
+      "email": "SCITRAN-EMAIL",
+      "firstname": "Example",
+      "lastname": "User",
+      "wheel": true
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+
+# Checkouts, python, and hroot
+/code/
+/lib/
+/graph
+
+# Generated and distribution files
+/*.pem
+/api/key+cert.pem
+/api/production.ini
+/api/bootstrap.json
+/containers/*.tar*
+/containers/fig.yml
+/config.toml
+/data/
+/nginx/key+cert.pem
+
+# Distribution
+/*.tar

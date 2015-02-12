@@ -1,0 +1,34 @@
+#
+# This is a hroot configuration file.
+#
+# To load configuration, Hroot will look in the current directory for a 'hroot.toml' file.
+# Then it'll keep loading any files in a parent directory, until it finds a folder without one.
+#
+
+# Settings control how your containers launch.
+# Images in sub-folders will inherit these settings, making it easy to extend configuration.
+[settings]
+	# Custom DNS servers
+	dns = [ "8.8.8.8", "8.8.4.4" ]
+
+	# Folder mounts
+	#	(host folder, container folder, 'ro' or 'rw' permissions)
+	mounts = [
+		[ ".../", "/scitran", "ro"],  # The top folder
+		[ "./",   "/hroot",   "ro"],  # The current folder
+	]
+
+	# What container folder to start in
+	folder = "/hroot"
+
+	# Interactive mode
+	attach = true
+
+	# Delete the container after running
+	purge = true
+
+
+# All our containers are in sub-folders, so some general settings are all we need.
+# Running hroot in this folder would fail, since there's no image configured.
+
+# To see how image configuration works, check out the ubuntu folder!

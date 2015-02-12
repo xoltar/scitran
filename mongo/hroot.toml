@@ -1,0 +1,29 @@
+# Our version of the Ubuntu image.
+# Runs a full system upgrade to get the latest packages.
+
+
+# This is where you name your image, its parent, and its index name (if it has one).
+# Because this container is originally from the index, it has all three.
+[image]
+	# The image name
+	name = "scitran.github.io/mongo"
+
+	# Upstream ubuntu image
+	upstream = "scitran.github.io/ubuntu/14.04"
+
+
+# Don't need to specify any extra settings here.
+# There were already a bunch set up in the parent folder's hroot.toml, and this file inherits them!
+[settings]
+
+
+# You can specify run targets of any name.
+# Targets let you take different actions with the same container.
+
+# This is the target that 'hroot run' will try if you don't specify one.
+[target.run]
+	command = [ "/bin/bash" ]
+
+# This is the target that 'hroot build' will try if you don't specify one.
+[target.build]
+	command = [ "/hroot/build.sh" ]

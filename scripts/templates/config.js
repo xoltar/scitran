@@ -1,0 +1,8 @@
+// This file is templated by scitran.py.
+// Edits to the generated file will not be saved!
+
+var BASE_URL = 'SCITRAN-BASE-URL';
+var VERIFICATION_ENDPOINT  = 'SCITRAN-AUTH-VERIFYURL';
+var AUTHENTICATION_ENDPOINT = 'SCITRAN-AUTH-AUTHURL';
+var AUTHENTICATION_PROVIDER = 'SCITRAN-AUTH-PROVIDER';
+var CLIENT_ID = 'SCITRAN-AUTH-CLIENTID';
