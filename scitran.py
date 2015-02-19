@@ -43,13 +43,17 @@ def interactiveGenerateConfig():
 
     domain=raw_input("\nEnter your domain name (or leave blank for a local install): ").strip()
 
-    demo=raw_input("\nIs this a demo (or leave blank for regular install): ").strip()
+    print "\nOptionally, you can run in demo mode."
+    print "This will allow any user to login and user the system."
+    demo=raw_input("Enable demo mode? (y/n): ").strip()
 
     # local installs have demo mode enabled
     # Local installs should NOT use 127.0.0.1 due to SSL problems :(
-    demo = True
-    if demo == "":
+    if demo == "y":
+        demo = True
+    else
         demo = False
+
     if domain == "":
         domain = "localhost"
 
