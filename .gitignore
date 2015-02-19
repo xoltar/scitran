@@ -1,5 +1,6 @@
 
-# Checkouts, python, and hroot
+# Binaries, checkouts, python, and hroot
+/bin/
 /code/
 /lib/
 /graph
