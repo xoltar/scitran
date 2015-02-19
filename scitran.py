@@ -51,7 +51,7 @@ def interactiveGenerateConfig():
     # Local installs should NOT use 127.0.0.1 due to SSL problems :(
     if demo == "y":
         demo = True
-    else
+    else:
         demo = False
 
     if domain == "":
