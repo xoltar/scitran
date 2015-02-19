@@ -252,7 +252,7 @@ def start(args):
     nginx = getTarball('nginx')
 
     # Resolve code installs
-    checkCodeDirs(['api', 'data', 'scripts', 'sdm'])
+    checkCodeDirs(['api', 'data', 'sdm'])
 
     # Resolve configuration
     if not os.path.isfile(CONFIG_FILE):
