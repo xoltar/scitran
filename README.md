@@ -1,42 +1,46 @@
-# Scitran
+# SciTran &ndash; Scientific Data Management
 
-### Saving Science. Starting with Neuroscience.
-
-## Installing
+## Installation
 
 [Install Docker](https://docs.docker.com/installation), then download our release:
 
 ```
-mkdir scitran ; cd scitran
+mkdir scitran && cd scitran
 
-wget https://storage.googleapis.com/scitran-dist/release.tar -O release.tar
+wget https://storage.googleapis.com/scitran-dist/release.tar
 tar -xf release.tar
 
 sudo apt-get install -y python-pip
-sudo pip install --target lib docker-py requests sh toml
+sudo pip install --upgrade  pip
+sudo pip install --target lib --upgrade docker-py requests sh toml
+```
 
+Start SciTran:
+
+```
 sudo ./scitran.py start
 ```
 
 ## Development
 
-If you plan to work on scitran, clone this repository and install our dependencies:
+If you plan to work on SciTran, clone this repository and install our dependencies:
 
 ```
-git clone https://github.com/scitran/scitran.git ; cd scitran
+git clone https://github.com/scitran/scitran.git && cd scitran
 
 sudo apt-get install -y python-pip
-sudo pip install --target lib docker-py requests sh toml
+sudo pip install --upgrade  pip
+sudo pip install --target lib --upgrade docker-py requests sh toml
 ```
 
 Download the release as above, but you only need the containers:
 
 ```
-wget https://storage.googleapis.com/scitran-dist/release.tar -O release.tar
+wget https://storage.googleapis.com/scitran-dist/release.tar
 tar -xf release.tar containers/
 ```
 
-Finally, clone all our other source code:
+Next, clone all our other source code:
 
 ```
 git clone https://github.com/scitran/api.git      code/api
