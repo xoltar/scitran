@@ -226,7 +226,7 @@ def bootstrapData(config, docker, apiName, mongoName, email):
         working_dir="/service/code/api",
         environment={ "PYTHONPATH": "/service/code/data" },
         volumes=['/service/config', '/service/code'],
-        command=["./bootstrap.py", "dbinitsort", "mongodb://mongo/nims", "/service/code/testdata/", "https://nginx:8080/api", "-n", "-j", "/service/config/bootstrap.json"]
+        command=["./bootstrap.py", "dbinitsort", "mongodb://mongo/nims", "/service/code/testdata/", "https://nginx/api", "-n", "-j", "/service/config/bootstrap.json"]
     )
 
     if container["Warnings"] != None:
