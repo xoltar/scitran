@@ -22,7 +22,28 @@ api:
         - mongo
     environment:
       - PYTHONPATH=/service/code/data
-    command: uwsgi /service/config/production.ini
+    command:  "uwsgi     \
+    --socket [::]:3031 \
+        --chmod-socket \
+        --chdir /service/code/api \
+        --wsgi-file api.wsgi \
+        --master \
+        --processes 2 \
+        --threads 2 \
+        --die-on-term \
+        --logto /service/log/api.log \
+        --pythonpath /service/code/data \
+        --pyargv 'SCITRAN-SITE-ID \
+                  SCITRAN-SITE-NAME \
+                --api_uri https://127.0.0.1/api \
+                --db_uri mongodb://mongo/nims \
+                --data_path /service/blocks \
+                --ssl_cert /service/config/key+cert.pem \
+                SCITRAN-CENTRAL-URL \
+                SCITRAN-DEMO \
+                --oauth2_id_endpoint SCITRAN-AUTH-TOKEN-ENDPOINT'
+    "
+
 nginx:
     image: scitran-nginx:0
     volumes:
@@ -32,7 +53,6 @@ nginx:
     ports:
         - "80:80"
         - "443:443"
-        - "8080:8080"
     links:
         - api
     command: nginx

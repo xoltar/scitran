@@ -28,9 +28,6 @@ FIG_OUT=os.path.join("containers", "fig.yml")
 CONFIGJS_IN=os.path.join("scripts", "templates", "config.js")
 CONFIGJS_OUT=os.path.join("code", "sdm", "app", "config", "default", "config.js")
 
-PRODUCTIONINI_IN=os.path.join("scripts", "templates", "production.ini")
-PRODUCTIONINI_OUT=os.path.join("api", "production.ini")
-
 BOOTSTRAP_IN=os.path.join("scripts", "templates", "bootstrap.json")
 BOOTSTRAP_OUT=os.path.join("api", "bootstrap.json")
 
@@ -50,9 +47,9 @@ def interactiveGenerateConfig():
     # local installs have demo mode enabled
     # Local installs should NOT use 127.0.0.1 due to SSL problems :(
     if demo == "y":
-        demo = True
+        demo = '--demo'
     else:
-        demo = False
+        demo = ''
 
     if domain == "":
         domain = "localhost"
@@ -66,7 +63,7 @@ def interactiveGenerateConfig():
 
     # Default empty values for a disconnected instance
     siteID=""
-    siteName="Example Site"
+    siteName=""
     centralURL=""
 
     # If site is externally routable, ask if they're connected to scitran central
@@ -77,18 +74,20 @@ def interactiveGenerateConfig():
 
         # Only needed if this instance is registered
         if siteID != "":
-            centralURL="https://sdmc.scitran.io"
-            siteName=raw_input("Enter your registered site name: ").strip()
+            centralURL="--central_uri https://sdmc.scitran.io/api"
+            siteID = '--site_id ' + siteID
+            siteName="--site_name '%s'" % raw_input("Enter your registered site name: ").strip()
         else:
-            # Concern that code might misbehave with empty site ID.
-            siteID="0"
-
+            # site id is require, but can default to special reserved 'local'
+            centralURL=""
+            siteID="--site_id local"
+            siteName="--site_name 'Local'"
 
     # generate schema
     config = toml.dumps({
         "docker": docker,
         "domain": domain,
-        "demo": str(demo),
+        "demo": demo,
         "auth": {
             "provider": "Google",
             "server": {
@@ -176,26 +175,22 @@ def checkCodeDirs(dirs):
 # Generate config files with templated values
 def generateTemplates(config):
     figTemplate = open(FIG_IN).read()
-    fig = figTemplate.replace("SCITRAN-CWD", os.getcwd())
-    open(FIG_OUT, "w").write(fig)
-
-    configJsTemplate = open(CONFIGJS_IN).read()
-    configJs = configJsTemplate.replace(
-        "SCITRAN-BASE-URL", "https://" + config["domain"] + ":8080/api/").replace(
-        "SCITRAN-AUTH-PROVIDER",        config['auth']['provider']).replace(
-        "SCITRAN-AUTH-AUTHURL",         config['auth']['server']['authEndpoint']).replace(
-        "SCITRAN-AUTH-VERIFYURL",       config['auth']['server']['verifyEndpoint']).replace(
-        "SCITRAN-AUTH-CLIENTID",        config['auth']['client']['id'])
-    open(CONFIGJS_OUT, "w").write(configJs)
-
-    productionTemplate = open(PRODUCTIONINI_IN).read()
-    production = productionTemplate.replace(
+    fig = figTemplate.replace("SCITRAN-CWD", os.getcwd()).replace(
         "SCITRAN-AUTH-TOKEN-ENDPOINT", config['auth']['client']['tokenEndpoint']).replace(
         "SCITRAN-SITE-ID",             config['central']['id']).replace(
         "SCITRAN-SITE-NAME",           config['central']['name']).replace(
         "SCITRAN-CENTRAL-URL",         config['central']['url']).replace(
         "SCITRAN-DEMO",                config['demo'])
-    open(PRODUCTIONINI_OUT, "w").write(production)
+    open(FIG_OUT, "w").write(fig)
+
+    configJsTemplate = open(CONFIGJS_IN).read()
+    configJs = configJsTemplate.replace(
+        "SCITRAN-BASE-URL", "https://" + config["domain"] + "/api/").replace(
+        "SCITRAN-AUTH-PROVIDER",        config['auth']['provider']).replace(
+        "SCITRAN-AUTH-AUTHURL",         config['auth']['server']['authEndpoint']).replace(
+        "SCITRAN-AUTH-VERIFYURL",       config['auth']['server']['verifyEndpoint']).replace(
+        "SCITRAN-AUTH-CLIENTID",        config['auth']['client']['id'])
+    open(CONFIGJS_OUT, "w").write(configJs)
 
     combinedCert = open(KEY_CERT_COMBINED_FILE).read()
     open(os.path.join("api", KEY_CERT_COMBINED_FILE), "w").write(combinedCert)
