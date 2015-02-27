@@ -10,14 +10,14 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
 import argparse, glob
 
 # Local imports
-import requests, sh, toml
+import requests, sh, json
 from docker import Client as DockerClient
 
 # Run script from location of this script
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # Setup
-CONFIG_FILE = "config.toml"
+CONFIG_FILE = "config.json"
 KEY_CERT_COMBINED_FILE = "key+cert.pem"
 KEY_FILE="key.pem"
 CERT_FILE="cert.pem"
@@ -76,15 +76,15 @@ def interactiveGenerateConfig():
         if siteID != "":
             centralURL="--central_uri https://sdmc.scitran.io/api"
             siteID = '--site_id ' + siteID
-            siteName="--site_name '%s'" % raw_input("Enter your registered site name: ").strip()
+            siteName=raw_input("Enter your registered site name: ").strip()
         else:
             # site id is require, but can default to special reserved 'local'
             centralURL=""
             siteID="--site_id local"
-            siteName="--site_name 'Local'"
+            siteName="Local"
 
     # generate schema
-    config = toml.dumps({
+    config = json.dumps({
         "docker": docker,
         "domain": domain,
         "demo": demo,
@@ -104,7 +104,7 @@ def interactiveGenerateConfig():
             "id": siteID,
             "name": siteName,
         }
-    })
+    }, indent=4, separators=(',', ': '))
 
     print "\nSaving config file to " + CONFIG_FILE + "..."
     configFile = open(CONFIG_FILE, "w")
@@ -177,6 +177,7 @@ def generateTemplates(config):
     figTemplate = open(FIG_IN).read()
     fig = figTemplate.replace("SCITRAN-CWD", os.getcwd()).replace(
         "SCITRAN-AUTH-TOKEN-ENDPOINT", config['auth']['client']['tokenEndpoint']).replace(
+        "SCITRAN-API-URL","https://" + config['domain'] + '/api').replace(
         "SCITRAN-SITE-ID",             config['central']['id']).replace(
         "SCITRAN-SITE-NAME",           config['central']['name']).replace(
         "SCITRAN-CENTRAL-URL",         config['central']['url']).replace(
@@ -257,7 +258,7 @@ def start(args):
     if not os.path.isfile(CONFIG_FILE):
         print "No config file found. Looks like we're setting up a new scitran instance today!\n"
         interactiveGenerateConfig()
-    config = toml.loads(open(CONFIG_FILE).read())
+    config = json.loads(open(CONFIG_FILE).read())
 
     # Resolve certificate
     if not os.path.isfile(KEY_CERT_COMBINED_FILE):
@@ -337,7 +338,7 @@ def start(args):
 
 # Stop a running scitran instance, if any
 def stop(args):
-    config = toml.loads(open(CONFIG_FILE).read())
+    config = json.loads(open(CONFIG_FILE).read())
     docker = DockerClient(base_url=config['docker'])
 
     # Location of docker daemon could have changed; inform fig
