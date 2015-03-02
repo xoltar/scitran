@@ -13,7 +13,7 @@
 /containers/*.tar*
 /containers/fig.yml
 /config.toml
-/data/
+/persistent/
 /nginx/key+cert.pem
 
 # Distribution
