@@ -349,6 +349,12 @@ def start(args):
         raw_input("If a generated cert is OK, press enter to continue: ").strip()
         create_self_signed_cert()
 
+    # copy key+cert.pem into locations that will be bind mounted to the containers
+    print 'Copying key+cert.pem into api and nginx bind mount locations'
+    combinedCert = open(KEY_CERT_COMBINED_FILE).read()
+    open(os.path.join("api", KEY_CERT_COMBINED_FILE), "w").write(combinedCert)
+    open(os.path.join("nginx", KEY_CERT_COMBINED_FILE), "w").write(combinedCert)
+
     # Detect if cluster is new (has never been started before)
     newCluster = not os.path.isfile(os.path.join('persistent', 'mongo', 'mongod.lock'))
     email = ""
@@ -407,6 +413,7 @@ def start(args):
         bootstrap_data(args, api["fullName"], mongo["fullName"], email)
 
     # check the state of the instance, are all three containers running?
+    # TODO: instead of checking that three containers are running try hitting the API with requests. HEAD /api
     current_status = instance_status()
     running = 0
     for k, v in current_status.iteritems():
@@ -429,6 +436,7 @@ def stop(args):
             if image_name in image['Image']:
                 print "Stopping previous %s..." % image_name
                 docker_client.stop(container=image['Id'])
+    # TODO: stop should also clear out the containers that were being used
 
 def inspect(args):
     pass
