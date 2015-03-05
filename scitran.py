@@ -46,7 +46,7 @@ def generate_config():
 
     domain = raw_input('\nEnter your domain name [localhost]: ').strip() or 'localhost'
 
-    site_name = raw_input('\nEnter your site name [local]: ').strip() or 'local'
+    site_name = raw_input('\nEnter your site name [Local]: ').strip() or 'Local'
 
     print '\nOptionally, you can run in demo mode.'
     print 'This will allow any user of your auth provider to login and use the system'
