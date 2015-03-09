@@ -14,6 +14,7 @@ import sh
 import json
 import glob
 import docker
+import shutil
 import argparse
 import subprocess
 # import requests
@@ -483,6 +484,23 @@ def config(args):
         else:
             write_config(generate_config(), CONFIG_FILE)
 
+def purge(args):
+    print '\nWARNING: PURGING'
+    # TODO make sure this instance's containers are stopped
+    if os.path.exists('config.json'):
+        os.remove('config.json')
+        print 'purged ./config.json'
+    try:
+        shutil.rmtree('persistent')
+    except OSError as e:
+        print str(e)
+        print 'Are you `tail`ing any log files? or have any files open? plz close and rerun `./scitran.py purge`'
+    else:
+        print 'purged ./persistent/'
+
+    # TODO remove the containers
+    # TODO remove the images
+
 if __name__ == '__main__':
     # entrypoints
     parser = argparse.ArgumentParser()
@@ -560,6 +578,13 @@ if __name__ == '__main__':
         )
     config_parser.add_argument('action', help='view', choices=['rerun', 'rm', 'view'], nargs='?', default='rerun')
     config_parser.set_defaults(func=config)
+
+    purge_parser = subparsers.add_parser(
+        name='purge',
+        help='remove scitan config, persistent data, containers and images. BRUTAL!',
+        description='./scitran.py purge',
+        )
+    purge_parser.set_defaults(func=purge)
 
     # do it
     args = parser.parse_args()
