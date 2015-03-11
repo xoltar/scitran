@@ -285,8 +285,8 @@ def bootstrap_data(args, api_name, mongo_name, email):
     # Run the container
     # NOTE: If these volumes change, scitran.py bootstrapping must as well.
     c.start(container=container["Id"], links={mongo_id: "mongo", nginx_id: 'nginx'}, binds={
-        os.path.join(os.getcwd(), 'api'):         {'bind': '/service/config', 'ro': False },
-        os.path.join(os.getcwd(), 'code'):        {'bind': '/service/code',   'ro': False },
+        os.path.join(HERE, 'api'):         {'bind': '/service/config', 'ro': False },
+        os.path.join(HERE, 'code'):        {'bind': '/service/code',   'ro': False },
     })
 
     # Watch it run
