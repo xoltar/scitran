@@ -34,6 +34,7 @@ api:
         - --die-on-term
         - --logto=/service/log/api.log
         - --pythonpath=/service/code/data
+        - --socket-timeout=7200
         # stringify pyargv to be be able to separate one option per line
         - "--pyargv=--site_id SCITRAN-SITE-ID \
                     --site_name SCITRAN-SITE-NAME \
