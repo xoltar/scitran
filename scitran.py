@@ -494,7 +494,7 @@ def purge(args):
         shutil.rmtree('persistent')
     except OSError as e:
         print str(e)
-        print 'Are you `tail`ing any log files? or have any files open? plz close and rerun `./scitran.py purge`'
+        print 'Are you `tail`ing any log files? or have any files open? please close and rerun `./scitran.py purge`'
     else:
         print 'purged ./persistent/'
 
