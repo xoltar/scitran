@@ -4,7 +4,7 @@
 mongo:
     image: scitran-mongo:0
     volumes:
-        - SCITRAN-CWD/data/mongo:/data/db
+        - SCITRAN-CWD/persistent/mongo:/data/db
     expose:
         - "21707"
     command: mongod
@@ -14,25 +14,45 @@ api:
     volumes:
         - SCITRAN-CWD/api:/service/config
         - SCITRAN-CWD/code:/service/code
-        - SCITRAN-CWD/data/blocks:/service/blocks
-        - SCITRAN-CWD/data/log:/service/log
+        - SCITRAN-CWD/persistent/data:/service/data
+        - SCITRAN-CWD/persistent/log:/service/log
     ports:
         - "3031"
     links:
         - mongo
     environment:
       - PYTHONPATH=/service/code/data
-    command: uwsgi /service/config/production.ini
+    command:
+        - uwsgi
+        - --socket=[::]:3031
+        - --chmod-socket
+        - --chdir=/service/code/api
+        - --wsgi-file=api.wsgi
+        - --master
+        - --processes=2
+        - --threads=2
+        - --die-on-term
+        - --logto=/service/log/api.log
+        - --pythonpath=/service/code/data
+        - --socket-timeout=7200
+        # stringify pyargv to be be able to separate one option per line
+        - "--pyargv=--site_id SCITRAN-SITE-ID \
+                    --site_name SCITRAN-SITE-NAME \
+                    --api_uri SCITRAN-API-URL \
+                    --db_uri mongodb://mongo/scitran \
+                    --data_path /service/data \
+                    --ssl_cert /service/config/key+cert.pem \
+                    SCITRAN-CENTRAL-URL SCITRAN-DEMO SCITRAN-INSECURE \
+                    --oauth2_id_endpoint SCITRAN-AUTH-ID-URL"
 nginx:
     image: scitran-nginx:0
     volumes:
         - SCITRAN-CWD/nginx:/etc/nginx
-        - SCITRAN-CWD/data/log:/service/log
+        - SCITRAN-CWD/persistent/log:/service/log
         - SCITRAN-CWD/code/sdm/app:/service/web
     ports:
         - "80:80"
         - "443:443"
-        - "8080:8080"
     links:
         - api
     command: nginx

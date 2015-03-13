@@ -17,7 +17,8 @@
       "email": "SCITRAN-EMAIL",
       "firstname": "Example",
       "lastname": "User",
-      "wheel": true
+      "wheel": true,
+      "root": true
     }
   ]
 }
