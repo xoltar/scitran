@@ -12,6 +12,7 @@ sys.path.append(os.path.join(HERE, 'lib'))
 import re
 import sh
 import json
+import toml
 import glob
 import docker
 import shutil
@@ -23,7 +24,7 @@ import subprocess
 os.chdir(HERE)
 
 # preflight
-CONFIG_FILE = 'config.json'
+CONFIG_FILE = 'config.toml'
 KEY_CERT_COMBINED_FILE = 'key+cert.pem'
 KEY_FILE = 'key.pem'
 CERT_FILE = 'cert.pem'
@@ -149,14 +150,14 @@ def write_config(config_dict, config_path):
     """Write config dictionary to json."""
     print '\nWriting configuration to %s' % config_path
     with open(config_path, 'w') as config_fp:
-        json.dump(config_dict, config_fp, indent=4, separators=(',', ': '))
+        config_fp.write(toml.dumps(config_dict))
 
 
 def read_config(config_path):
     """Read config dictionary from json."""
     try:
-        with open(config_path) as config_fp:
-            return json.load(config_fp)
+        with open(config_path, 'r') as config_fp:
+            return toml.loads(config_fp.read())
     except IOError as e:
         print 'Error reading configuration file. ' + str(e)
         print 'Please run `scitran config` or `scitran start`'
