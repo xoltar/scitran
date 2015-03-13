@@ -53,6 +53,7 @@ nginx:
     ports:
         - "80:80"
         - "443:443"
+        - "8080:8080"
     links:
         - api
     command: nginx

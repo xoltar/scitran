@@ -201,7 +201,7 @@ def generate_from_template(config_template_in, config_out):
         'SCITRAN-CWD': HERE,
         'SCITRAN-SITE-ID': config['site_id'],
         'SCITRAN-SITE-NAME': config['site_name'],
-        'SCITRAN-API-URL': 'https://' + config['domain'] + '/api',
+        'SCITRAN-API-URL': 'https://' + config['domain'] + ':8080' + '/api',
         'SCITRAN-CENTRAL-URL': ('--central_uri ' + config['central']['api_url']) if config['central']['registered'] else '',
         'SCITRAN-BASE-URL': 'https://' + config['domain'] + '/api/',
         'SCITRAN-DEMO': '--demo' if config['demo'] else '',
