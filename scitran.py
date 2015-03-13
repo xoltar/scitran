@@ -97,7 +97,6 @@ def generate_config():
 
     # generage config dict
     config_dict = {
-        'cwd': HERE,
         'docker_url': docker_url,
         'domain': domain,
         'demo': demo,
@@ -199,7 +198,7 @@ def generate_from_template(config_template_in, config_out):
     print 'generating %s from %s x %s' % (config_out, config_template_in, CONFIG_FILE)
     config = read_config(CONFIG_FILE)
     rep = {
-        'SCITRAN-CWD': config['cwd'],
+        'SCITRAN-CWD': HERE,
         'SCITRAN-SITE-ID': config['site_id'],
         'SCITRAN-SITE-NAME': config['site_name'],
         'SCITRAN-API-URL': 'https://' + config['domain'] + '/api',
