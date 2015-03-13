@@ -121,7 +121,6 @@ def generate_config():
 
 def system_report():
     """Get information about the system."""
-    print 'gathering system information'
     if not os.path.exists(CONFIG_FILE):
         print 'please configure docker client'
         sys.exit(2)
