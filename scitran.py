@@ -193,18 +193,28 @@ def create_self_certificate_authority():
     combined.close()
 
 
-def create_client_cert():
+def create_client_cert(drone_name):
     input_ = ['\n'] * 50
-    sh.openssl('genrsa', '-out', 'device_key.pem', '2048')
-    sh.openssl('req', '-new', '-key', 'device_key.pem', '-out', 'device.csr', _in=input_)
-    if not os.path.exists(ROOT_CERT_COMBINED_FILE):
+    drone_key = '%s_key.pem' % drone_name
+    drone_cert = '%s_cert.pem' % drone_name
+    drone_csr = '%s.csr' % drone_name
+    drone_combined = '%s_key+cert.pem' % drone_name
+    sh.openssl('genrsa', '-out', drone_key, '2048')
+    sh.openssl('req', '-new', '-key', drone_key, '-out', drone_csr, _in=input_)
+    if not os.path.exists('rootCA_cert.srl'):
         print 'creating new CA serial file'
-        cmd = ['x509', '-req', '-in', 'device.csr', '-CA', 'rootCA_cert.pem', '-CAkey', 'rootCA_key.pem', '-CAcreateserial', '-out', 'device_cert.pem', '-days', '999']
+        cmd = ['x509', '-req', '-in', drone_csr, '-CA', ROOT_CERT_FILE, '-CAkey', ROOT_KEY_FILE, '-CAcreateserial', '-out', drone_cert, '-days', '999']
     else:
         print 'reusing exisitng CA serial file'
-        cmd = ['x509', '-req', '-in', 'device.csr', '-CA', 'rootCA_cert.pem', '-CAkey', 'rootCA_key.pem', '-CAserial', 'rootCA_cert.srl', '-out', 'device_cert.pem', '-days', '999']
-
+        cmd = ['x509', '-req', '-in', drone_csr, '-CA', ROOT_CERT_FILE, '-CAkey', ROOT_KEY_FILE, '-CAserial', 'rootCA_cert.srl', '-out', drone_cert, '-days', '999']
     sh.openssl(cmd)
+    key = open(drone_key).read()
+    cert = open(drone_cert).read()
+
+    combined = open(drone_combined, "w")
+    combined.write(key + cert)
+    combined.close()
+
 
 def create_self_signed_cert():
     """Create selfsigned key+cert.pem."""
@@ -587,7 +597,7 @@ def add_drone(args):
     """Create a ssl certificate that is signed by our own certificate authority."""
     print 'creating client cert for drone %s' % args.drone_name
     create_self_certificate_authority()
-    create_client_cert()
+    create_client_cert(args.drone_name)
 
 def purge(args):
     print '\nWARNING: PURGING'
