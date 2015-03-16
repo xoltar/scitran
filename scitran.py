@@ -347,13 +347,14 @@ def instance_status():
                 status_item['Image'] = container['Image']
     return status
 
+# Handle output formatting from SH
+def process_output(line):
+    print line.strip()
 
 # targets
 def start(args):
     """Start or restart the scitran instance."""
     print '\n(re)starting the instance'
-    def process_output(line):
-        print line.strip()
 
     # Resolve local fig binary
     if not os.path.isfile(os.path.join("bin", "fig")):
@@ -430,6 +431,10 @@ def start(args):
     else:
         sh.cp('nginx/nginx.default.conf', 'nginx/nginx.conf')
 
+    # Check configuration
+    print "Checking configuration..."
+    test(None)
+
     # start the containers
     print "Starting scitran..."
     fig_prefix = config.get('fig_prefix')
@@ -469,6 +474,25 @@ def stop(args):
                 print "Stopping previous %s..." % container_name
                 docker_client.stop(container=container['Id'])
     # TODO: stop should also clear out the containers that were being used
+
+def test(args):
+    """Run various pre-launch tests"""
+
+    try:
+        sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", "scitran", "run", "nginx", "nginx", "-t", _out=process_output, _err=process_output)
+
+        # TODO: add more checks here...
+
+    except sh.ErrorReturnCode as e:
+        print
+        print "Pre-launch checks failed; see above output for more."
+
+        # For some reason, sh.ErrorReturnCode does not have a strongly-typed exit code variable.
+        # This makes it mildly irritating to get a code out of an exception.
+        # Oh well; reflection and string parsing it is then :/
+        error = e.__class__.__name__
+        underscore = error.rfind("_") + 1
+        exit(int(error[underscore:]))
 
 def inspect(args):
     pass
@@ -553,6 +577,14 @@ if __name__ == '__main__':
         description='scitran stop',
         )
     stop_parser.set_defaults(func=stop)
+
+    # test
+    test_parser = subparsers.add_parser(
+        name='test',
+        help='test',
+        description='scitran test',
+        )
+    test_parser.set_defaults(func=test)
 
     # inspect
     inspect_parser = subparsers.add_parser(
