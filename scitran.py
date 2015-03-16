@@ -28,6 +28,10 @@ KEY_CERT_COMBINED_FILE = 'key+cert.pem'
 KEY_FILE = 'key.pem'
 CERT_FILE = 'cert.pem'
 
+ROOT_CERT_COMBINED_FILE = 'rootCA_key+cert.pem'
+ROOT_KEY_FILE = 'rootCA_key.pem'
+ROOT_CERT_FILE = 'rootCA_cert.pem'
+
 FIG_IN = os.path.join("scripts", "templates", "fig.yml")
 FIG_OUT = os.path.join("containers", "fig.yml")
 
@@ -176,6 +180,31 @@ def read_config(config_path):
     else:
         print '\nLoaded configuration from %s' % config_path
 
+def create_self_certificate_authority():
+    """Create our own certificate authority."""
+    input_ = ['\n'] * 50
+    sh.openssl('genrsa', '-out', ROOT_KEY_FILE, '2048')
+    sh.openssl('req', '-x509', '-new', '-nodes', '-key', 'rootCA_key.pem', '-days', '999', '-out', ROOT_CERT_FILE, _in=input_)
+    # now join two to give to nginx
+    key = open(ROOT_KEY_FILE).read()
+    cert = open(ROOT_CERT_FILE).read()
+    combined = open(ROOT_CERT_COMBINED_FILE, "w")
+    combined.write(key + cert)
+    combined.close()
+
+
+def create_client_cert():
+    input_ = ['\n'] * 50
+    sh.openssl('genrsa', '-out', 'device_key.pem', '2048')
+    sh.openssl('req', '-new', '-key', 'device_key.pem', '-out', 'device.csr', _in=input_)
+    if not os.path.exists(ROOT_CERT_COMBINED_FILE):
+        print 'creating new CA serial file'
+        cmd = ['x509', '-req', '-in', 'device.csr', '-CA', 'rootCA_cert.pem', '-CAkey', 'rootCA_key.pem', '-CAcreateserial', '-out', 'device_cert.pem', '-days', '999']
+    else:
+        print 'reusing exisitng CA serial file'
+        cmd = ['x509', '-req', '-in', 'device.csr', '-CA', 'rootCA_cert.pem', '-CAkey', 'rootCA_key.pem', '-CAserial', 'rootCA_cert.srl', '-out', 'device_cert.pem', '-days', '999']
+
+    sh.openssl(cmd)
 
 def create_self_signed_cert():
     """Create selfsigned key+cert.pem."""
@@ -374,6 +403,10 @@ def start(args):
         raw_input("If a generated cert is OK, press enter to continue: ").strip()
         create_self_signed_cert()
 
+    if not os.path.exists(ROOT_CERT_COMBINED_FILE):
+        print '\nNo root CA found. creating one' # TODO better wording, more helpful text
+        create_self_certificate_authority()
+
     # copy key+cert.pem into locations that will be bind mounted to the containers
     print 'Copying key+cert.pem into api and nginx bind mount locations'
     combinedCert = open(KEY_CERT_COMBINED_FILE).read()
@@ -550,6 +583,12 @@ def config(args):
         else:
             write_config(generate_config(args.mode), CONFIG_FILE)
 
+def add_drone(args):
+    """Create a ssl certificate that is signed by our own certificate authority."""
+    print 'creating client cert for drone %s' % args.drone_name
+    create_self_certificate_authority()
+    create_client_cert()
+
 def purge(args):
     print '\nWARNING: PURGING'
     # TODO make sure this instance's containers are stopped
@@ -661,6 +700,14 @@ if __name__ == '__main__':
         description='./scitran.py purge',
         )
     purge_parser.set_defaults(func=purge)
+
+    add_drone_parser = subparsers.add_parser(
+        name='add_drone',
+        help='create signed client certificate for within this instance', # TODO better wording
+        description='./scitran.py add_drone <drone_name>',
+        )
+    add_drone_parser.add_argument('drone_name', help='name of drone, ex. reaper, engine001')
+    add_drone_parser.set_defaults(func=add_drone)
 
     # do it
     args = parser.parse_args()
