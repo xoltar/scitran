@@ -56,4 +56,4 @@ nginx:
         - "SCITRAN-MACHINE-PORT:8080"
     links:
         - api
-    command: nginx
+    command: /etc/nginx/run.sh
