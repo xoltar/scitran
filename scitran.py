@@ -423,6 +423,12 @@ def start(args):
     open(os.path.join("api", KEY_CERT_COMBINED_FILE), "w").write(combinedCert)
     open(os.path.join("nginx", KEY_CERT_COMBINED_FILE), "w").write(combinedCert)
 
+    # also copy our created root CA certificate in place
+    combinedCA = open(ROOT_CERT_COMBINED_FILE).read()
+    with open(os.path.join("nginx", ROOT_CERT_COMBINED_FILE), "w") as nginx_root_ca:
+        nginx_root_ca.write(combinedCA)
+        print 'Copied rootCA_key+cert.pem into nginx bind mount location'
+
     # Detect if cluster is new (has never been started before)
     newCluster = not os.path.isfile(os.path.join('persistent', 'mongo', 'mongod.lock'))
     email = ""
