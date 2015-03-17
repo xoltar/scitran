@@ -31,6 +31,7 @@ CERT_FILE = 'cert.pem'
 ROOT_CERT_COMBINED_FILE = 'rootCA_key+cert.pem'
 ROOT_KEY_FILE = 'rootCA_key.pem'
 ROOT_CERT_FILE = 'rootCA_cert.pem'
+ROOT_SRL_FILE = 'rootCA_cert.srl'
 
 FIG_IN = os.path.join("scripts", "templates", "fig.yml")
 FIG_OUT = os.path.join("containers", "fig.yml")
@@ -180,11 +181,12 @@ def read_config(config_path):
     else:
         print '\nLoaded configuration from %s' % config_path
 
+
 def create_self_certificate_authority():
     """Create our own certificate authority."""
     input_ = ['\n'] * 50
     sh.openssl('genrsa', '-out', ROOT_KEY_FILE, '2048')
-    sh.openssl('req', '-x509', '-new', '-nodes', '-key', 'rootCA_key.pem', '-days', '999', '-out', ROOT_CERT_FILE, _in=input_)
+    sh.openssl('req', '-x509', '-new', '-nodes', '-key', ROOT_KEY_FILE, '-days', '999', '-out', ROOT_CERT_FILE, _in=input_)
     # now join two to give to nginx
     key = open(ROOT_KEY_FILE).read()
     cert = open(ROOT_CERT_FILE).read()
@@ -203,12 +205,12 @@ def create_client_cert(drone_name):
     drone_combined = '%s_key+cert.pem' % drone_name
     sh.openssl('genrsa', '-out', drone_key, '2048')
     sh.openssl('req', '-new', '-key', drone_key, '-out', drone_csr, _in=input_)
-    if not os.path.exists('rootCA_cert.srl'):
+    if not os.path.exists(ROOT_SRL_FILE):
         print 'creating new CA serial file'
         cmd = ['x509', '-req', '-in', drone_csr, '-CA', ROOT_CERT_FILE, '-CAkey', ROOT_KEY_FILE, '-CAcreateserial', '-out', drone_cert, '-days', '999']
     else:
         print 'reusing exisitng CA serial file'
-        cmd = ['x509', '-req', '-in', drone_csr, '-CA', ROOT_CERT_FILE, '-CAkey', ROOT_KEY_FILE, '-CAserial', 'rootCA_cert.srl', '-out', drone_cert, '-days', '999']
+        cmd = ['x509', '-req', '-in', drone_csr, '-CA', ROOT_CERT_FILE, '-CAkey', ROOT_KEY_FILE, '-CAserial', ROOT_SRL_FILE, '-out', drone_cert, '-days', '999']
     sh.openssl(cmd)
     key = open(drone_key).read()
     cert = open(drone_cert).read()
@@ -416,8 +418,10 @@ def start(args):
         create_self_signed_cert()
 
     if not os.path.exists(ROOT_CERT_COMBINED_FILE):
-        print '\nNo root CA found. creating one' # TODO better wording, more helpful text
+        print '\nNo root CA cert found. creating one' # TODO better wording, more helpful text
         create_self_certificate_authority()
+    else:
+        print '\nExisting root CA cert found...'
 
     # copy key+cert.pem into locations that will be bind mounted to the containers
     print 'Copying key+cert.pem into api and nginx bind mount locations'
