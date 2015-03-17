@@ -596,7 +596,10 @@ def config(args):
 def add_drone(args):
     """Create a ssl certificate that is signed by our own certificate authority."""
     print 'creating client cert for drone %s' % args.drone_name
-    create_self_certificate_authority()
+    if not os.path.exists(ROOT_CERT_COMBINED_FILE):
+        print '\nA root certificate authority has not been created...creating...'
+        create_self_certificate_authority()
+
     create_client_cert(args.drone_name)
 
 def purge(args):
