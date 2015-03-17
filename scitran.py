@@ -182,8 +182,16 @@ def read_config(config_path):
         print '\nLoaded configuration from %s' % config_path
 
 
-def create_self_certificate_authority():
+def create_self_certificate_authority(force=False):
     """Create our own certificate authority."""
+    if os.path.exists(ROOT_CERT_COMBINED_FILE) and not force:
+        print('\n\nWARNING!  WARNING!')
+        print('\n%s already exists. Replacing this file will invalidate')
+        print('any existing client certificates. You will need to recreate')
+        print('all client certificates.')
+        confirm = raw_input('Are you sure you wish to continue? [y/N]: ') or 'n'
+        if confirm.lower() == 'y':
+            create_self_certificate_authority(force=True)
     input_ = ['\n'] * 50
     sh.openssl('genrsa', '-out', ROOT_KEY_FILE, '2048')
     sh.openssl('req', '-x509', '-new', '-nodes', '-key', ROOT_KEY_FILE, '-days', '999', '-out', ROOT_CERT_FILE, _in=input_)
