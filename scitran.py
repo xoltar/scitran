@@ -194,7 +194,9 @@ def create_self_certificate_authority():
 
 
 def create_client_cert(drone_name):
-    input_ = ['\n'] * 50
+    # each of the signed certs MUST have a complete DN, including common name
+    # however, the common name does not need to match... wait...i thought nginx did hostname matching
+    input_ = ['\n'] * 5 + ['localhost\n'] + (['\n'] * 30)
     drone_key = '%s_key.pem' % drone_name
     drone_cert = '%s_cert.pem' % drone_name
     drone_csr = '%s.csr' % drone_name
