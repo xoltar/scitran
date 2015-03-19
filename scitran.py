@@ -192,11 +192,14 @@ def create_self_signed_cert():
         print 'generated %s, %s and %s' % (KEY_FILE, CERT_FILE, KEY_CERT_COMBINED_FILE)
 
 
-def generate_from_template(config_template_in, config_out):
+def generate_from_template(config_template_in, config_out, nginx_image='', api_image='', mongo_image=''):
     """Replace template placeholders with actual values."""
     print 'generating %s from %s x %s' % (config_out, config_template_in, CONFIG_FILE)
     config = read_config(CONFIG_FILE)
     rep = {
+        'SCITRAN-NGINX-IMAGE': nginx_image,
+        'SCITRAN-API-IMAGE': api_image,
+        'SCITRAN-MONGO-IMAGE': mongo_image,
         'SCITRAN-CWD': HERE,
         'SCITRAN-SITE-ID': config['site_id'],
         'SCITRAN-SITE-NAME': config['site_name'],
@@ -237,7 +240,7 @@ def getTarball(name):
     tarFile = matches[0]
 
     # String ops; format is ContainerType-VersionString.tar.Type
-    base = os.path.basename(tarFile).rsplit(".", 3)[0]
+    base = os.path.basename(tarFile).split('.tar')[0]
     image = base.split("-", 1)
     imageName = "scitran-" + image[0]
     imageTag = image[1]
@@ -373,14 +376,20 @@ def start(args):
     foundApi = False
     foundMongo = False
     foundNginx = False
+    api_image = ''
+    mongo_image = ''
+    nginx_image = ''
 
     for image in docker_client.images():
         if api['fullName'] in image['RepoTags']:
             foundApi = True
+            api_image = api['fullName']
         if mongo['fullName'] in image['RepoTags']:
             foundMongo = True
+            mongo_image = mongo['fullName']
         if nginx['fullName'] in image['RepoTags']:
             foundNginx = True
+            nginx_image = nginx['fullName']
 
     # Resolve imported containers
     if not foundApi:
@@ -396,8 +405,8 @@ def start(args):
         docker_client.import_image(src=nginx['location'], repository=nginx['name'], tag=nginx['tag'])
 
     # generate config files
-    generate_from_template(CONFIGJS_IN, CONFIGJS_OUT)
-    generate_from_template(FIG_IN, FIG_OUT)
+    generate_from_template(CONFIGJS_IN, CONFIGJS_OUT, nginx_image, api_image, mongo_image)  # this does not need image info
+    generate_from_template(FIG_IN, FIG_OUT, nginx_image, api_image, mongo_image)
 
     # start the containers
     print "Starting scitran..."
