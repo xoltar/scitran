@@ -5,10 +5,8 @@
 [Install Docker](https://docs.docker.com/installation), then download our release:
 
 ```
-mkdir scitran && cd scitran
-
 wget https://storage.googleapis.com/scitran-dist/release.tar
-tar -xf release.tar
+tar -xf release.tar && cd scitran
 
 sudo apt-get install -y python-pip
 sudo pip install --upgrade  pip
@@ -33,11 +31,11 @@ sudo pip install --upgrade  pip
 sudo pip install --target lib --upgrade docker-py requests sh toml
 ```
 
-Download the release as above, but you only need two folders:
+Download the release into the cloned respository, but you only need two folders:
 
 ```
 wget https://storage.googleapis.com/scitran-dist/release.tar
-tar -xf release.tar bin/ containers/
+tar -xf release.tar --strip-components=1 scitran/bin/ scitran/containers/
 ```
 
 Next, clone all our other source code:
