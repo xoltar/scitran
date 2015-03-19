@@ -11,6 +11,7 @@ pip install numpy==1.9.0 \
 	webapp2 webob requests markdown jsonschema \
 	pymongo \
 	pillow \
+	pytz \
 	git+https://github.com/scitran/pydicom.gitmirror.git@value_mismatch \
 	git+https://github.com/nipy/nibabel.git \
 	git+https://github.com/moloney/dcmstack.git \
