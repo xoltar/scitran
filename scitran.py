@@ -376,9 +376,6 @@ def start(args):
     foundApi = False
     foundMongo = False
     foundNginx = False
-    api_image = ''
-    mongo_image = ''
-    nginx_image = ''
 
     for image in docker_client.images():
         if api['fullName'] in image['RepoTags']:
@@ -410,7 +407,7 @@ def start(args):
 
     # start the containers
     print "Starting scitran..."
-    fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", "scitran", "up", "-d", _out=process_output, _err=process_output)
+    fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", config.get('site_id'), "up", "-d", _out=process_output, _err=process_output)
 
     # also spin up a service container
     print "Starting a service container..."
@@ -436,14 +433,16 @@ def start(args):
 
 def stop(args):
     """Stop a running instance."""
+    # only stop THIS configurations instance
     config = read_config(CONFIG_FILE)
+    site_id = config.get('site_id')
     docker_client = docker.Client(base_url=config['docker_url'])
-    for image in docker_client.containers():
+    for container in docker_client.containers():
         # TODO: parse these names from the fig file
-        for image_name in ['scitran-api', 'scitran-mongo', 'scitran-nginx']:
-            if image_name in image['Image']:
-                print "Stopping previous %s..." % image_name
-                docker_client.stop(container=image['Id'])
+        for container_name in ['/%s_api_1' % site_id, '/%s_mongo_1' % site_id, '/%s_nginx_1' % site_id]:
+            if container_name in container['Names']:
+                print "Stopping previous %s..." % container_name
+                docker_client.stop(container=container['Id'])
     # TODO: stop should also clear out the containers that were being used
 
 def inspect(args):
