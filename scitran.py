@@ -286,13 +286,17 @@ def bootstrap_data(args, api_name, mongo_name, email):
         if 'nginx' in image['Image']:
             nginx_id = image['Id']
 
+    upload_url = 'https://nginx/api'
+    if config.get('ssl_terminator'):
+        upload_url = 'http://nginx/api'
+
     # Create a container for bootstrapping
     container = c.create_container(
         image=api_name,
         working_dir="/service/code/api",
         environment={"PYTHONPATH": "/service/code/data"},
         volumes=['/service/config', '/service/code'],
-        command=["./bootstrap.py", "dbinitsort", "mongodb://mongo/scitran", "/service/code/testdata/", "https://nginx/api", "-n", "-j", "/service/config/bootstrap.json"]
+        command=["./bootstrap.py", "dbinitsort", "mongodb://mongo/scitran", "/service/code/testdata/", upload_url, "-n", "-j", "/service/config/bootstrap.json"]
     )
 
     if container["Warnings"] is not None:
