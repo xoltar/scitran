@@ -6,6 +6,7 @@
 /graph
 
 # Generated and distribution files
+/virtualenv
 /*.pem
 /api/key+cert.pem
 /api/production.ini
