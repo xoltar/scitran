@@ -94,6 +94,11 @@ def generate_config():
         site_id = raw_input('If so, enter your site ID []: ').strip() or site_id
     registered = True if site_id != 'local' else False
 
+    # advanced configurations
+    http_port = int(raw_input('http port [80]: ').strip() or 80)
+    https_port = int(raw_input('https port [443]: ').strip() or 443)
+    machine_port = int(raw_input('machine api [8080]: ').strip()or 8080)
+
     # generage config dict
     config_dict = {
         'docker_url': docker_url,
@@ -102,6 +107,9 @@ def generate_config():
         'insecure': insecure,
         'site_id': site_id,
         'site_name': site_name,
+        'http_port': http_port,
+        'https_port': https_port,
+        'machine_port': machine_port,
         'auth': {
             'provider': oa2_provider,
             'id_endpoint': oa2_id_endpoint,
@@ -197,6 +205,9 @@ def generate_from_template(config_template_in, config_out, nginx_image='', api_i
     print 'generating %s from %s x %s' % (config_out, config_template_in, CONFIG_FILE)
     config = read_config(CONFIG_FILE)
     rep = {
+        'SCITRAN-HTTP-PORT': str(config['http_port']),
+        'SCITRAN-HTTPS-PORT': str(config['https_port']),
+        'SCITRAN-MACHINE-PORT': str(config['machine_port']),
         'SCITRAN-NGINX-IMAGE': nginx_image,
         'SCITRAN-API-IMAGE': api_image,
         'SCITRAN-MONGO-IMAGE': mongo_image,

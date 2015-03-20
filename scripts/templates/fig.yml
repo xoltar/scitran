@@ -51,9 +51,9 @@ nginx:
         - SCITRAN-CWD/persistent/log:/service/log
         - SCITRAN-CWD/code/sdm/app:/service/web
     ports:
-        - "80:80"
-        - "443:443"
-        - "8080:8080"
+        - "SCITRAN-HTTP-PORT:80"
+        - "SCITRAN-HTTPS-PORT:443"
+        - "SCITRAN-MACHINE-PORT:8080"
     links:
         - api
     command: nginx
