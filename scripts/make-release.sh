@@ -23,4 +23,4 @@ files+=(`ls containers/*.tar*`)
 
 # Don't create a tarbomb
 rm -f release.tar
-$tar --transform 's,^,scitran/,' -cf release.tar ${files[@]}
+$tar --transform 'flags=rSh;s,^,scitran/,' -cf release.tar ${files[@]}
