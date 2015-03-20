@@ -99,6 +99,9 @@ def generate_config():
     https_port = int(raw_input('https port [443]: ').strip() or 443)
     machine_port = int(raw_input('machine api [8080]: ').strip()or 8080)
 
+    # ssl termination
+    ssl_terminator = (raw_input('serve behind ssl terminator? [n/Y]: ').strip().lower() == 'y')
+
     # generage config dict
     config_dict = {
         'docker_url': docker_url,
@@ -110,6 +113,7 @@ def generate_config():
         'http_port': http_port,
         'https_port': https_port,
         'machine_port': machine_port,
+        'ssl_terminator': ssl_terminator,
         'auth': {
             'provider': oa2_provider,
             'id_endpoint': oa2_id_endpoint,
@@ -415,6 +419,12 @@ def start(args):
     # generate config files
     generate_from_template(CONFIGJS_IN, CONFIGJS_OUT, nginx_image, api_image, mongo_image)  # this does not need image info
     generate_from_template(FIG_IN, FIG_OUT, nginx_image, api_image, mongo_image)
+
+    # pick appropriate nginx configuration
+    if config.get('ssl_terminator'):
+        sh.cp('nginx/nginx.sslterm.conf', 'nginx/nginx.conf')
+    else:
+        sh.cp('nginx/nginx.default.conf', 'nginx/nginx.conf')
 
     # start the containers
     print "Starting scitran..."
