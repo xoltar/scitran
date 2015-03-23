@@ -12,8 +12,8 @@ Now, install SciTran:
 
 ```
 curl https://storage.googleapis.com/scitran-dist/release.tar | tar x
-virtualenv scitran/virtualenv
-source scitran/virtualenv/bin/activate
+virtualenv scitran/venv
+source scitran/venv/bin/activate
 pip install -U pip setuptools
 pip install docker-py requests sh toml
 ```
@@ -30,8 +30,8 @@ If you plan to work on SciTran, clone this repository and install our dependenci
 
 ```
 git clone https://github.com/scitran/scitran.git
-virtualenv scitran/virtualenv
-source scitran/virtualenv/bin/activate
+virtualenv scitran/venv
+source scitran/venv/bin/activate
 pip install -U pip setuptools
 pip install docker-py requests sh toml
 ```
