@@ -87,7 +87,7 @@ def generate_config(mode='default'):
     # scitran central
     registered = False
     if domain != 'localhost':
-        registered = raw_input('\nHave you registered with scitran central [y/n]: ').strip().lower() == 'y'
+        registered = raw_input('\nHave you registered with scitran central [y/N]: ').strip().lower() == 'y'
 
     site_id = raw_input('\nEnter your site ID [local]: ').strip() or 'local'
 
