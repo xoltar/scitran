@@ -105,6 +105,7 @@ def generate_config():
         'domain': domain,
         'demo': demo,
         'insecure': insecure,
+        'fig_prefix': site_id.replace('_', ''),
         'site_id': site_id,
         'site_name': site_name,
         'http_port': http_port,
@@ -317,15 +318,15 @@ def bootstrap_data(args, api_name, mongo_name, email):
 def instance_status():
     """Show which containers are running."""
     config = read_config(CONFIG_FILE)
-    fig_id = config.get('site_id').replace('_', '')
+    fig_prefix = config.get('fig_prefix')
     status = {
-        '/%s_api_1' % fig_id: {
+        '/%s_api_1' % fig_prefix: {
             'status': 'not running',
         },
-        '/%s_mongo_1' % fig_id: {
+        '/%s_mongo_1' % fig_prefix: {
             'status': 'not running',
         },
-        '/%s_nginx_1' % fig_id: {
+        '/%s_nginx_1' % fig_prefix: {
             'status': 'not running',
         },
     }
@@ -430,8 +431,8 @@ def start(args):
 
     # start the containers
     print "Starting scitran..."
-    fig_id = config.get('site_id').replace('_', '')
-    fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_id, "up", "-d", _out=process_output, _err=process_output)
+    fig_prefix = config.get('fig_prefix')
+    fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "up", "-d", _out=process_output, _err=process_output)
 
     # also spin up a service container
     print "Starting a service container..."
@@ -459,11 +460,10 @@ def stop(args):
     """Stop a running instance."""
     # only stop THIS configurations instance
     config = read_config(CONFIG_FILE)
-    fig_id = config.get('site_id').replace('_', '')
+    fig_prefix = config.get('fig_prefix')
     docker_client = docker.Client(base_url=config['docker_url'])
     for container in docker_client.containers():
-        # TODO: parse these names from the fig file
-        for container_name in ['/%s_api_1' % fig_id, '/%s_mongo_1' % fig_id, '/%s_nginx_1' % fig_id]:
+        for container_name in ['/%s_api_1' % fig_prefix, '/%s_mongo_1' % fig_prefix, '/%s_nginx_1' % fig_prefix]:
             if container_name in container['Names']:
                 print "Stopping previous %s..." % container_name
                 docker_client.stop(container=container['Id'])
