@@ -85,14 +85,11 @@ def generate_config():
                 is_oa2_config = True
 
     # scitran central
-    # TODO: be able to set site id independly from central registration
-    # desired behavior is to be able have whatever display in gui, regardless of being registered to internims
-    site_id = 'local'
     registered = False
     if domain != 'localhost':
-        print '\nHave you registered this site with scitran central?'
-        site_id = raw_input('If so, enter your site ID []: ').strip() or site_id
-    registered = True if site_id != 'local' else False
+        registered = raw_input('\nHave you registered with scitran central [y/n]: ').strip().lower() == 'y'
+
+    site_id = raw_input('\nEnter your site ID [local]: ').strip() or 'local'
 
     # advanced configurations
     http_port = int(raw_input('http port [80]: ').strip() or 80)
