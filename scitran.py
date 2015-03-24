@@ -39,7 +39,7 @@ BOOTSTRAP_OUT = os.path.join("api", "bootstrap.json")
 
 
 # building blocks
-def generate_config():
+def generate_config(mode='default'):
     """Interactive configuration."""
     print 'Running interactice config'
     docker_url = 'unix://var/run/docker.sock'
@@ -91,13 +91,17 @@ def generate_config():
 
     site_id = raw_input('\nEnter your site ID [local]: ').strip() or 'local'
 
-    # advanced configurations
-    http_port = int(raw_input('http port [80]: ').strip() or 80)
-    https_port = int(raw_input('https port [443]: ').strip() or 443)
-    machine_port = int(raw_input('machine api [8080]: ').strip()or 8080)
-
-    # ssl termination
-    ssl_terminator = (raw_input('serve behind ssl terminator? [n/Y]: ').strip().lower() == 'y')
+    http_port = 80
+    https_port = 443
+    machine_port = 8080
+    ssl_terminator = False
+    if mode == 'advanced':
+        print('\nExpert Mode Configurations')
+        http_port = int(raw_input('http port [80]: ').strip() or http_port)
+        https_port = int(raw_input('https port [443]: ').strip() or https_port)
+        machine_port = int(raw_input('machine api [8080]: ').strip()or machine_port)
+        ssl_terminator = (raw_input('serve behind ssl terminator? [n/Y]: ').strip().lower() == 'y')
+        # TODO: nginx worker processes, uwsgi master/threads/processes, etc.
 
     # generage config dict
     config_dict = {
@@ -358,7 +362,7 @@ def start(args):
 
     # load config
     if not os.path.exists(CONFIG_FILE):
-        write_config(generate_config(), CONFIG_FILE)
+        write_config(generate_config(mode=args.mode), CONFIG_FILE)
     config = read_config(CONFIG_FILE)
 
     # key+cert.pem check
@@ -510,9 +514,9 @@ def config(args):
         if os.path.exists(CONFIG_FILE):
             print 'warning: config.json exists'
             if raw_input('Rerun config and obliterate old config.json? [y/N]: ').strip().lower() == 'y':
-                write_config(generate_config(), CONFIG_FILE)
+                write_config(generate_config(args.mode), CONFIG_FILE)
         else:
-            write_config(generate_config(), CONFIG_FILE)
+            write_config(generate_config(args.mode), CONFIG_FILE)
 
 def purge(args):
     print '\nWARNING: PURGING'
@@ -542,6 +546,7 @@ if __name__ == '__main__':
         help='start or restart',
         description='scitran start',
         )
+    start_parser.add_argument('--mode', help='configuration mode', choices=['default', 'advanced'], default='default')
     start_parser.set_defaults(func=start)
 
     # stop
@@ -607,6 +612,7 @@ if __name__ == '__main__':
         description='scitran config',
         )
     config_parser.add_argument('action', help='view', choices=['rerun', 'rm', 'view'], nargs='?', default='rerun')
+    config_parser.add_argument('--mode', help='configuration mode', choices=['default', 'advanced'], default='default')
     config_parser.set_defaults(func=config)
 
     purge_parser = subparsers.add_parser(
