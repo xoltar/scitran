@@ -429,7 +429,8 @@ def start(args):
 
     # start the containers
     print "Starting scitran..."
-    fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", config.get('site_id'), "up", "-d", _out=process_output, _err=process_output)
+    fig_id = config.get('site_id').replace('_', '')
+    fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_id, "up", "-d", _out=process_output, _err=process_output)
 
     # also spin up a service container
     print "Starting a service container..."
@@ -457,11 +458,11 @@ def stop(args):
     """Stop a running instance."""
     # only stop THIS configurations instance
     config = read_config(CONFIG_FILE)
-    site_id = config.get('site_id')
+    fig_id = config.get('site_id').replace('_', '')
     docker_client = docker.Client(base_url=config['docker_url'])
     for container in docker_client.containers():
         # TODO: parse these names from the fig file
-        for container_name in ['/%s_api_1' % site_id, '/%s_mongo_1' % site_id, '/%s_nginx_1' % site_id]:
+        for container_name in ['/%s_api_1' % fig_id, '/%s_mongo_1' % fig_id, '/%s_nginx_1' % fig_id]:
             if container_name in container['Names']:
                 print "Stopping previous %s..." % container_name
                 docker_client.stop(container=container['Id'])
