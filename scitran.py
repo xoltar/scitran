@@ -317,24 +317,25 @@ def bootstrap_data(args, api_name, mongo_name, email):
 def instance_status():
     """Show which containers are running."""
     config = read_config(CONFIG_FILE)
+    fig_id = config.get('site_id').replace('_', '')
     status = {
-        'scitran-api': {
+        '/%s_api_1' % fig_id: {
             'status': 'not running',
         },
-        'scitran-mongo': {
+        '/%s_mongo_1' % fig_id: {
             'status': 'not running',
         },
-        'scitran-nginx': {
+        '/%s_nginx_1' % fig_id: {
             'status': 'not running',
         },
     }
     # TODO parse the output of docker inspect
     for container in docker.Client(config['docker_url']).containers():
         # TODO parse the container information
-        for image_name in ['scitran-api', 'scitran-mongo', 'scitran-nginx']:
-            if image_name in container['Image']:
+        for container_name in status.keys():
+            if container_name in container['Names']:
                 # TODO add more details!
-                status_item = status[image_name]
+                status_item = status[container_name]
                 status_item['status'] = 'running'
                 status_item['ports'] = container['Ports']
                 status_item['status'] = container['Status']
