@@ -15,7 +15,7 @@ curl https://storage.googleapis.com/scitran-dist/release.tar | tar x
 virtualenv scitran/venv
 source scitran/venv/bin/activate
 pip install -U pip setuptools
-pip install docker-py requests sh toml
+pip install -r scitran/requirements.txt
 ```
 
 Start SciTran:
@@ -33,7 +33,7 @@ git clone https://github.com/scitran/scitran.git
 virtualenv scitran/venv
 source scitran/venv/bin/activate
 pip install -U pip setuptools
-pip install docker-py requests sh toml
+pip install -r scitran/requirements.txt
 ```
 
 Download the release as above, but you only need two folders:
