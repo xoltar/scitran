@@ -21,7 +21,7 @@ pip install -r scitran/requirements.txt
 Start SciTran:
 
 ```
-source scitran/venv/bin/activate && sudo scitran/scitran.py start
+sudo bash -c "source scitran/venv/bin/activate && sudo scitran/scitran.py start"
 ```
 
 ## Development
@@ -55,5 +55,5 @@ git clone https://github.com/scitran/testdata.git scitran/code/testdata
 Finally, boot your local instance:
 
 ```
-source scitran/venv/bin/activate && sudo scitran/scitran.py start
+sudo bash -c "source scitran/venv/bin/activate && sudo scitran/scitran.py start"
 ```
