@@ -402,13 +402,10 @@ def start(args):
     for image in docker_client.images():
         if api['fullName'] in image['RepoTags']:
             foundApi = True
-            api_image = api['fullName']
         if mongo['fullName'] in image['RepoTags']:
             foundMongo = True
-            mongo_image = mongo['fullName']
         if nginx['fullName'] in image['RepoTags']:
             foundNginx = True
-            nginx_image = nginx['fullName']
 
     # Resolve imported containers
     if not foundApi:
@@ -424,8 +421,8 @@ def start(args):
         docker_client.import_image(src=nginx['location'], repository=nginx['name'], tag=nginx['tag'])
 
     # generate config files
-    generate_from_template(CONFIGJS_IN, CONFIGJS_OUT, nginx_image, api_image, mongo_image)  # this does not need image info
-    generate_from_template(FIG_IN, FIG_OUT, nginx_image, api_image, mongo_image)
+    generate_from_template(CONFIGJS_IN, CONFIGJS_OUT, nginx['fullName'], api['fullName'], mongo['fullName'])  # this does not need image info
+    generate_from_template(FIG_IN, FIG_OUT, nginx['fullName'], api['fullName'], mongo['fullName'])
 
     # pick appropriate nginx configuration
     if config.get('ssl_terminator'):
