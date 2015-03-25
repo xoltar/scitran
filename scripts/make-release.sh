@@ -9,5 +9,10 @@ files+=("bin")
 files+=("code")
 files+=(`ls containers/*.tar*`)
 
+# Don't create a tarbomb
 rm -f release.tar
-tar -cf release.tar ${files[@]}
+if [ "$(uname)" == "Darwin" ]; then
+    tar -s ',^,scitran/,' -cf release.tar ${files[@]}
+else
+    tar --transform 's,^,scitran/,rSh' -cf release.tar ${files[@]}
+fi

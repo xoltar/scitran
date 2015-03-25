@@ -2,14 +2,14 @@
 # Edits to the generated file will not be saved!
 
 mongo:
-    image: scitran-mongo:0
+    image: SCITRAN-MONGO-IMAGE
     volumes:
         - SCITRAN-CWD/persistent/mongo:/data/db
     expose:
         - "21707"
     command: mongod
 api:
-    image: scitran-api:0
+    image: SCITRAN-API-IMAGE
     # NOTE: If these volumes change, scitran.py bootstrapping must as well.
     volumes:
         - SCITRAN-CWD/api:/service/config
@@ -45,14 +45,15 @@ api:
                     SCITRAN-CENTRAL-URL SCITRAN-DEMO SCITRAN-INSECURE \
                     --oauth2_id_endpoint SCITRAN-AUTH-ID-URL"
 nginx:
-    image: scitran-nginx:0
+    image: SCITRAN-NGINX-IMAGE
     volumes:
         - SCITRAN-CWD/nginx:/etc/nginx
         - SCITRAN-CWD/persistent/log:/service/log
         - SCITRAN-CWD/code/sdm/app:/service/web
     ports:
-        - "80:80"
-        - "443:443"
+        - "SCITRAN-HTTP-PORT:80"
+        - "SCITRAN-HTTPS-PORT:443"
+        - "SCITRAN-MACHINE-PORT:8080"
     links:
         - api
     command: nginx

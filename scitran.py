@@ -7,7 +7,6 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(HERE, 'lib'))
 
 import re
 import sh
@@ -40,7 +39,7 @@ BOOTSTRAP_OUT = os.path.join("api", "bootstrap.json")
 
 
 # building blocks
-def generate_config():
+def generate_config(mode='default'):
     """Interactive configuration."""
     print 'Running interactice config'
     docker_url = 'unix://var/run/docker.sock'
@@ -86,14 +85,23 @@ def generate_config():
                 is_oa2_config = True
 
     # scitran central
-    # TODO: be able to set site id independly from central registration
-    # desired behavior is to be able have whatever display in gui, regardless of being registered to internims
-    site_id = 'local'
     registered = False
     if domain != 'localhost':
-        print '\nHave you registered this site with scitran central?'
-        site_id = raw_input('If so, enter your site ID []: ').strip() or site_id
-    registered = True if site_id != 'local' else False
+        registered = raw_input('\nHave you registered with scitran central [y/N]: ').strip().lower() == 'y'
+
+    site_id = raw_input('\nEnter your site ID [local]: ').strip() or 'local'
+
+    http_port = 80
+    https_port = 443
+    machine_port = 8080
+    ssl_terminator = False
+    if mode == 'advanced':
+        print('\nExpert Mode Configurations')
+        http_port = int(raw_input('http port [80]: ').strip() or http_port)
+        https_port = int(raw_input('https port [443]: ').strip() or https_port)
+        machine_port = int(raw_input('machine api [8080]: ').strip()or machine_port)
+        ssl_terminator = (raw_input('serve behind ssl terminator? [n/Y]: ').strip().lower() == 'y')
+        # TODO: nginx worker processes, uwsgi master/threads/processes, etc.
 
     # generage config dict
     config_dict = {
@@ -101,8 +109,13 @@ def generate_config():
         'domain': domain,
         'demo': demo,
         'insecure': insecure,
+        'fig_prefix': site_id.replace('_', ''),
         'site_id': site_id,
         'site_name': site_name,
+        'http_port': http_port,
+        'https_port': https_port,
+        'machine_port': machine_port,
+        'ssl_terminator': ssl_terminator,
         'auth': {
             'provider': oa2_provider,
             'id_endpoint': oa2_id_endpoint,
@@ -193,15 +206,21 @@ def create_self_signed_cert():
         print 'generated %s, %s and %s' % (KEY_FILE, CERT_FILE, KEY_CERT_COMBINED_FILE)
 
 
-def generate_from_template(config_template_in, config_out):
+def generate_from_template(config_template_in, config_out, nginx_image='', api_image='', mongo_image=''):
     """Replace template placeholders with actual values."""
     print 'generating %s from %s x %s' % (config_out, config_template_in, CONFIG_FILE)
     config = read_config(CONFIG_FILE)
     rep = {
+        'SCITRAN-HTTP-PORT': str(config['http_port']),
+        'SCITRAN-HTTPS-PORT': str(config['https_port']),
+        'SCITRAN-MACHINE-PORT': str(config['machine_port']),
+        'SCITRAN-NGINX-IMAGE': nginx_image,
+        'SCITRAN-API-IMAGE': api_image,
+        'SCITRAN-MONGO-IMAGE': mongo_image,
         'SCITRAN-CWD': HERE,
         'SCITRAN-SITE-ID': config['site_id'],
         'SCITRAN-SITE-NAME': config['site_name'],
-        'SCITRAN-API-URL': 'https://' + config['domain'] + '/api',
+        'SCITRAN-API-URL': 'https://' + config['domain'] + ':8080' + '/api',
         'SCITRAN-CENTRAL-URL': ('--central_uri ' + config['central']['api_url']) if config['central']['registered'] else '',
         'SCITRAN-BASE-URL': 'https://' + config['domain'] + '/api/',
         'SCITRAN-DEMO': '--demo' if config['demo'] else '',
@@ -238,7 +257,7 @@ def getTarball(name):
     tarFile = matches[0]
 
     # String ops; format is ContainerType-VersionString.tar.Type
-    base = os.path.basename(tarFile).rsplit(".", 3)[0]
+    base = os.path.basename(tarFile).split('.tar')[0]
     image = base.split("-", 1)
     imageName = "scitran-" + image[0]
     imageTag = image[1]
@@ -269,13 +288,17 @@ def bootstrap_data(args, api_name, mongo_name, email):
         if 'nginx' in image['Image']:
             nginx_id = image['Id']
 
+    upload_url = 'https://nginx/api'
+    if config.get('ssl_terminator'):
+        upload_url = 'http://nginx/api'
+
     # Create a container for bootstrapping
     container = c.create_container(
         image=api_name,
         working_dir="/service/code/api",
         environment={"PYTHONPATH": "/service/code/data"},
         volumes=['/service/config', '/service/code'],
-        command=["./bootstrap.py", "dbinitsort", "mongodb://mongo/scitran", "/service/code/testdata/", "https://nginx/api", "-n", "-j", "/service/config/bootstrap.json"]
+        command=["./bootstrap.py", "dbinitsort", "mongodb://mongo/scitran", "/service/code/testdata/", upload_url, "-n", "-j", "/service/config/bootstrap.json"]
     )
 
     if container["Warnings"] is not None:
@@ -299,24 +322,25 @@ def bootstrap_data(args, api_name, mongo_name, email):
 def instance_status():
     """Show which containers are running."""
     config = read_config(CONFIG_FILE)
+    fig_prefix = config.get('fig_prefix')
     status = {
-        'scitran-api': {
+        '/%s_api_1' % fig_prefix: {
             'status': 'not running',
         },
-        'scitran-mongo': {
+        '/%s_mongo_1' % fig_prefix: {
             'status': 'not running',
         },
-        'scitran-nginx': {
+        '/%s_nginx_1' % fig_prefix: {
             'status': 'not running',
         },
     }
     # TODO parse the output of docker inspect
     for container in docker.Client(config['docker_url']).containers():
         # TODO parse the container information
-        for image_name in ['scitran-api', 'scitran-mongo', 'scitran-nginx']:
-            if image_name in container['Image']:
+        for container_name in status.keys():
+            if container_name in container['Names']:
                 # TODO add more details!
-                status_item = status[image_name]
+                status_item = status[container_name]
                 status_item['status'] = 'running'
                 status_item['ports'] = container['Ports']
                 status_item['status'] = container['Status']
@@ -338,7 +362,7 @@ def start(args):
 
     # load config
     if not os.path.exists(CONFIG_FILE):
-        write_config(generate_config(), CONFIG_FILE)
+        write_config(generate_config(mode=args.mode), CONFIG_FILE)
     config = read_config(CONFIG_FILE)
 
     # key+cert.pem check
@@ -397,12 +421,19 @@ def start(args):
         docker_client.import_image(src=nginx['location'], repository=nginx['name'], tag=nginx['tag'])
 
     # generate config files
-    generate_from_template(CONFIGJS_IN, CONFIGJS_OUT)
-    generate_from_template(FIG_IN, FIG_OUT)
+    generate_from_template(CONFIGJS_IN, CONFIGJS_OUT, nginx['fullName'], api['fullName'], mongo['fullName'])  # this does not need image info
+    generate_from_template(FIG_IN, FIG_OUT, nginx['fullName'], api['fullName'], mongo['fullName'])
+
+    # pick appropriate nginx configuration
+    if config.get('ssl_terminator'):
+        sh.cp('nginx/nginx.sslterm.conf', 'nginx/nginx.conf')
+    else:
+        sh.cp('nginx/nginx.default.conf', 'nginx/nginx.conf')
 
     # start the containers
     print "Starting scitran..."
-    fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", "scitran", "up", "-d", _out=process_output, _err=process_output)
+    fig_prefix = config.get('fig_prefix')
+    fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "up", "-d", _out=process_output, _err=process_output)
 
     # also spin up a service container
     print "Starting a service container..."
@@ -428,14 +459,15 @@ def start(args):
 
 def stop(args):
     """Stop a running instance."""
+    # only stop THIS configurations instance
     config = read_config(CONFIG_FILE)
+    fig_prefix = config.get('fig_prefix')
     docker_client = docker.Client(base_url=config['docker_url'])
-    for image in docker_client.containers():
-        # TODO: parse these names from the fig file
-        for image_name in ['scitran-api', 'scitran-mongo', 'scitran-nginx']:
-            if image_name in image['Image']:
-                print "Stopping previous %s..." % image_name
-                docker_client.stop(container=image['Id'])
+    for container in docker_client.containers():
+        for container_name in ['/%s_api_1' % fig_prefix, '/%s_mongo_1' % fig_prefix, '/%s_nginx_1' % fig_prefix]:
+            if container_name in container['Names']:
+                print "Stopping previous %s..." % container_name
+                docker_client.stop(container=container['Id'])
     # TODO: stop should also clear out the containers that were being used
 
 def inspect(args):
@@ -479,9 +511,9 @@ def config(args):
         if os.path.exists(CONFIG_FILE):
             print 'warning: config.json exists'
             if raw_input('Rerun config and obliterate old config.json? [y/N]: ').strip().lower() == 'y':
-                write_config(generate_config(), CONFIG_FILE)
+                write_config(generate_config(args.mode), CONFIG_FILE)
         else:
-            write_config(generate_config(), CONFIG_FILE)
+            write_config(generate_config(args.mode), CONFIG_FILE)
 
 def purge(args):
     print '\nWARNING: PURGING'
@@ -511,6 +543,7 @@ if __name__ == '__main__':
         help='start or restart',
         description='scitran start',
         )
+    start_parser.add_argument('--mode', help='configuration mode', choices=['default', 'advanced'], default='default')
     start_parser.set_defaults(func=start)
 
     # stop
@@ -576,6 +609,7 @@ if __name__ == '__main__':
         description='scitran config',
         )
     config_parser.add_argument('action', help='view', choices=['rerun', 'rm', 'view'], nargs='?', default='rerun')
+    config_parser.add_argument('--mode', help='configuration mode', choices=['default', 'advanced'], default='default')
     config_parser.set_defaults(func=config)
 
     purge_parser = subparsers.add_parser(
