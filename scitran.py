@@ -477,9 +477,10 @@ def stop(args):
 
 def test(args):
     """Run various pre-launch tests"""
-
+    config = read_config(CONFIG_FILE)
+    fig_prefix = config.get('fig_prefix')
     try:
-        sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", "scitran", "run", "nginx", "nginx", "-t", _out=process_output, _err=process_output)
+        sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "run", "nginx", "nginx", "-t", _out=process_output, _err=process_output)
 
         # TODO: add more checks here...
 
