@@ -495,6 +495,16 @@ def test(args):
         underscore = error.rfind("_") + 1
         exit(int(error[underscore:]))
 
+        # TODO: gather more information about the failure cause
+
+    # fig run creates special containers with naming pattern of '/prefix_container_run_int', e.g. /local_nginx_run_1
+    # delete these immediately to prevent accumulation of testing containers
+    docker_client = docker.Client(base_url=config['docker_url'])
+    for container in docker_client.containers(all=True):
+        if ('/%s_nginx_run_1' % fig_prefix) in container['Names']:
+            docker_client.stop(container=container['Id'])
+            docker_client.remove_container(container=container['Id'], v=True)
+
 def inspect(args):
     pass
 
