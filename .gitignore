@@ -7,16 +7,14 @@
 
 # Generated and distribution files
 /venv
-/*.pem
-/api/key+cert.pem
+/api/*.pem
 /api/production.ini
 /api/bootstrap.json
 /containers/*.tar*
 /containers/fig.yml
 /config.toml
 /persistent/
-/nginx/key+cert.pem
-/nginx/client-*.ca.pem
+/nginx/*.pem
 
 # Distribution
 /*.tar
