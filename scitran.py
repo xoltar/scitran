@@ -213,7 +213,7 @@ def create_client_cert(drone_name):
     drone_key =      os.path.join('persistent', 'keys', 'client-%s-key.pem'      % drone_name)
     drone_cert =     os.path.join('persistent', 'keys', 'client-%s-cert.pem'     % drone_name)
     drone_csr =      os.path.join('persistent', 'keys', 'client-%s.csr'          % drone_name)
-    drone_combined = os.path.join('persistent', 'keys', 'client-%s_key+cert.pem' % drone_name)
+    drone_combined = os.path.join('persistent', 'keys', 'client-%s-key+cert.pem' % drone_name)
     sh.openssl('genrsa', '-out', drone_key, '2048')
     sh.openssl('req', '-new', '-key', drone_key, '-out', drone_csr, _in=input_)
     if not os.path.exists(ROOT_SRL_FILE):
