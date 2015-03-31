@@ -24,14 +24,17 @@ os.chdir(HERE)
 
 # preflight
 CONFIG_FILE = 'config.toml'
-KEY_CERT_COMBINED_FILE = 'key+cert.pem'
-KEY_FILE = 'key.pem'
-CERT_FILE = 'cert.pem'
 
-ROOT_CERT_COMBINED_FILE = 'rootCA_key+cert.pem'
-ROOT_KEY_FILE = 'rootCA_key.pem'
-ROOT_CERT_FILE = 'rootCA_cert.pem'
-ROOT_SRL_FILE = 'rootCA_cert.srl'
+KEYS_FOLDER = os.path.join('persistent', 'keys')
+
+KEY_CERT_COMBINED_FILE =   os.path.join(KEYS_FOLDER, 'base-key+cert.pem')
+KEY_FILE =                 os.path.join(KEYS_FOLDER, 'base-key.pem')
+CERT_FILE =                os.path.join(KEYS_FOLDER, 'base-cert.pem')
+
+ROOT_CERT_COMBINED_FILE  = os.path.join(KEYS_FOLDER, 'rootCA-key+cert.pem')
+ROOT_KEY_FILE =            os.path.join(KEYS_FOLDER, 'rootCA-key.pem')
+ROOT_CERT_FILE =           os.path.join(KEYS_FOLDER, 'rootCA-cert.pem')
+ROOT_SRL_FILE =            os.path.join(KEYS_FOLDER, 'rootCA-cert.srl')
 
 FIG_IN = os.path.join("scripts", "templates", "fig.yml")
 FIG_OUT = os.path.join("containers", "fig.yml")
@@ -207,10 +210,10 @@ def create_client_cert(drone_name):
     # each of the signed certs MUST have a complete DN, including common name
     # however, the common name does not need to match... wait...i thought nginx did hostname matching
     input_ = ['\n'] * 5 + ['localhost\n'] + (['\n'] * 30)
-    drone_key = '%s_key.pem' % drone_name
-    drone_cert = '%s_cert.pem' % drone_name
-    drone_csr = '%s.csr' % drone_name
-    drone_combined = '%s_key+cert.pem' % drone_name
+    drone_key =      os.path.join('persistent', 'keys', 'client-%s-key.pem'      % drone_name)
+    drone_cert =     os.path.join('persistent', 'keys', 'client-%s-cert.pem'     % drone_name)
+    drone_csr =      os.path.join('persistent', 'keys', 'client-%s.csr'          % drone_name)
+    drone_combined = os.path.join('persistent', 'keys', 'client-%s-key+cert.pem' % drone_name)
     sh.openssl('genrsa', '-out', drone_key, '2048')
     sh.openssl('req', '-new', '-key', drone_key, '-out', drone_csr, _in=input_)
     if not os.path.exists(ROOT_SRL_FILE):
@@ -227,10 +230,16 @@ def create_client_cert(drone_name):
     combined.write(key + cert)
     combined.close()
 
+    # After signing, the CSR is useless
+    os.remove(drone_csr)
+
 
 def create_self_signed_cert():
     """Create selfsigned key+cert.pem."""
     print "Generating certificate with OpenSSL..."
+
+    # Folder to hold all client certificates
+    if not os.path.exists(KEYS_FOLDER): os.makedirs(KEYS_FOLDER)
 
     # OpenSSL will ask you some arbitrary set of questions, all of which are irrelevat for self-signed certificates.
     # This feeds a large set of newlines in an attempt to brute-force ignore its prompts.
@@ -434,14 +443,11 @@ def start(args):
     # copy key+cert.pem into locations that will be bind mounted to the containers
     print 'Copying key+cert.pem into api and nginx bind mount locations'
     combinedCert = open(KEY_CERT_COMBINED_FILE).read()
-    open(os.path.join("api", KEY_CERT_COMBINED_FILE), "w").write(combinedCert)
-    open(os.path.join("nginx", KEY_CERT_COMBINED_FILE), "w").write(combinedCert)
+    shutil.copy2(KEY_CERT_COMBINED_FILE, 'api')
+    shutil.copy2(KEY_CERT_COMBINED_FILE, 'nginx')
 
     # also copy our created root CA certificate in place
-    combinedCA = open(ROOT_CERT_COMBINED_FILE).read()
-    with open(os.path.join("nginx", ROOT_CERT_COMBINED_FILE), "w") as nginx_root_ca:
-        nginx_root_ca.write(combinedCA)
-        print 'Copied rootCA_key+cert.pem into nginx bind mount location'
+    shutil.copy2(ROOT_CERT_COMBINED_FILE, 'nginx')
 
     # Detect if cluster is new (has never been started before)
     newCluster = not os.path.isfile(os.path.join('persistent', 'mongo', 'mongod.lock'))
