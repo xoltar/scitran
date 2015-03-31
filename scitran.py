@@ -8,7 +8,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 VENV = os.path.join(HERE, 'venv/lib/python2.7/site-packages')
-if not os.path.isdir(VENV):
+if os.path.isdir(VENV):
     sys.path.insert(0, VENV)
 else:
     print '\n%s not found.' % VENV
