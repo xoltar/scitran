@@ -21,7 +21,7 @@ pip install -r scitran/requirements.txt
 Start SciTran:
 
 ```
-sudo bash -c "source scitran/venv/bin/activate && sudo scitran/scitran.py start"
+sudo scitran/scitran.py start
 ```
 
 ## Development
@@ -55,14 +55,14 @@ git clone https://github.com/scitran/testdata.git scitran/code/testdata
 Finally, boot your local instance:
 
 ```
-sudo bash -c "source scitran/venv/bin/activate && sudo scitran/scitran.py start"
+sudo scitran/scitran.py start
 ```
 
 Upgrading from pre 0.2.2:
 Stop your instance, move `key+cert.pem` to `persistet/keys/base-key+cert.pem`, and then restart your instance.
 
 ```
-sudo bash -c "source scitran/venv/bin/activate && sudo scitran/scitran.py stop"
+sudo scitran/scitran.py stop"
 mv scitran/key+cert.pem scitran/persistent/keys/base-key+cert.pem
-sudo bash -c "source scitran/venv/bin/activate && sudo scitran/scitran.py start"
+sudo scitran/scitran.py start"
 ```

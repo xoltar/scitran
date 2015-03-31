@@ -7,6 +7,18 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+VENV = os.path.join(HERE, 'venv/lib/python2.7/site-packages')
+if os.path.isdir(VENV):
+    sys.path.insert(0, VENV)
+else:
+    print '\n%s not found.' % VENV
+    print '\nplease run:'
+    print '    cd %s' % HERE
+    print '    virtualenv venv'
+    print '    source venv/bin/activate'
+    print '    pip install -U pip setuptools'
+    print '    pip install docker-py requests toml sh'
+    sys.exit(1)
 
 import re
 import sh
