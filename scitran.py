@@ -7,6 +7,12 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+VENV = os.path.join(HERE, 'venv/lib/python2.7/site-packages')
+if os.path.isdir(VENV):
+    sys.path.insert(0, VENV)
+else:
+    print 'virtual env "venv" not found.'
+    sys.exit(1)
 
 import re
 import sh
