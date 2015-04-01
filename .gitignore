@@ -16,6 +16,7 @@
 /persistent
 /nginx/*.pem
 /nginx/nginx.conf
+/nginx/ca-certificates+scitranCA.crt
 
 # Development vagrant
 /.vagrant/

@@ -454,12 +454,11 @@ def start(args):
 
     # copy key+cert.pem into locations that will be bind mounted to the containers
     print 'Copying key+cert.pem into api and nginx bind mount locations'
-    combinedCert = open(KEY_CERT_COMBINED_FILE).read()
     shutil.copy2(KEY_CERT_COMBINED_FILE, 'api')
     shutil.copy2(KEY_CERT_COMBINED_FILE, 'nginx')
 
     # also copy our created root CA certificate in place
-    shutil.copy2(ROOT_CERT_COMBINED_FILE, 'nginx')
+    shutil.copy2(ROOT_CERT_FILE, 'nginx')
 
     # Detect if cluster is new (has never been started before)
     newCluster = not os.path.isfile(os.path.join('persistent', 'mongo', 'mongod.lock'))
@@ -560,8 +559,10 @@ def test(args):
     """Run various pre-launch tests"""
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
+    # might be nice to separate the combined ca-ceritifcates.crt from this test...
+    # this creates and tests the combined CA file.
     try:
-        sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "run", "nginx", "nginx", "-t", _out=process_output, _err=process_output)
+        sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "run", "nginx", "/etc/nginx/run.sh", "-t", _out=process_output, _err=process_output)
 
         # TODO: add more checks here...
 
