@@ -641,6 +641,35 @@ def add_drone(args):
 
     create_client_cert(args.drone_name)
 
+# XXX: all of this engine stuff is likely to change.
+# keep it grouped together until it settles down
+def engine(args):
+    """Control and configure this instance's engine."""
+    config = read_config(CONFIG_FILE)
+    scheme = 'https'
+    # when using an ssl terminator, the engine runs behind the SSL terminator, and could
+    # access the API over http.
+    # or the engine goes through the "front door", in which case the outer nginx must be
+    # configured to also use the instance created CA certificate.
+    if config.get('ssl_terminator'):
+        scheme = 'http'
+    machine_api = '%s://%s:%s/api' % (scheme, config.get('domain'), config.get('machine_port'))
+    if args.action == 'bootstrap':
+        # create docker images for the containers using the provided build.sh script
+        # this is far from ideal, currently bootstraps dcm_convert docker image
+        build_script = os.path.join(HERE, 'code', 'apps', 'dcm_convert', 'build.sh')
+        subprocess.check_call([build_script])
+    elif args.action == 'start':
+        # provide the start command for the engine, or start within a tmux session?
+        # would be swanky if this detected it was in a tmux session, and creates a new pane...
+        print 'code/engine/engine.py %s local server.pem  --log_level debug' % machine_api
+    elif args.action == 'status':
+        # provide feedback about the engine? id? is it running? which API is it hitting? what's it currently doing?
+        print 'scitran.py engine status not implemented'
+    elif args.action == 'stop':
+        # stop the engine
+        print 'scitran.py engine stop not implemented'
+
 def purge(args):
     print '\nWARNING: PURGING'
     # TODO make sure this instance's containers are stopped
@@ -760,6 +789,14 @@ if __name__ == '__main__':
         )
     add_drone_parser.add_argument('drone_name', help='name of drone, ex. reaper, engine001')
     add_drone_parser.set_defaults(func=add_drone)
+
+    engine_parser = subparsers.add_parser(
+        name='engine',
+        help='bootstrap, start and stop the engine',
+        description='./scitran.py engine',
+        )
+    engine_parser.add_argument('action', help='control the local engine', choices=['start', 'status', 'stop', 'bootstrap'])
+    engine_parser.set_defaults(func=engine)
 
     # do it
     args = parser.parse_args()
