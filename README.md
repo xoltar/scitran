@@ -58,6 +58,23 @@ Finally, boot your local instance:
 sudo scitran/scitran.py start
 ```
 
+## Vagrant
+
+You're welcome to try out vagrant box:
+
+```
+git clone https://github.com/scitran/scitran.git; cd scitran
+
+vagrant up
+vagrant ssh -c "sudo /scitran/scitran.py start"
+```
+
+This box currently assumes an empty + unconfigured scitran folder.
+For filesystem compatibility reasons, the stateful `persistent` folder is placed at `/var/persistent` on the guest.
+
+Do not use this method with pre-existing data or configuration; **it will be wiped**.
+
+
 ### Upgrading from before 0.2.2
 Stop your instance, move `key+cert.pem` to `persistet/keys/base-key+cert.pem`, then restart your instance.
 

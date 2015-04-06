@@ -13,9 +13,12 @@
 /containers/*.tar*
 /containers/fig.yml
 /config.toml
-/persistent/
+/persistent
 /nginx/*.pem
 /nginx/nginx.conf
+
+# Development vagrant
+/.vagrant/
 
 # Distribution
 /*.tar
