@@ -58,11 +58,11 @@ Finally, boot your local instance:
 sudo scitran/scitran.py start
 ```
 
-Upgrading from pre 0.2.2:
-Stop your instance, move `key+cert.pem` to `persistet/keys/base-key+cert.pem`, and then restart your instance.
+### Upgrading from before 0.2.2
+Stop your instance, move `key+cert.pem` to `persistet/keys/base-key+cert.pem`, then restart your instance.
 
 ```
-sudo scitran/scitran.py stop"
+sudo scitran/scitran.py stop
 mv scitran/key+cert.pem scitran/persistent/keys/base-key+cert.pem
-sudo scitran/scitran.py start"
+sudo scitran/scitran.py start
 ```
