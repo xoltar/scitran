@@ -713,15 +713,14 @@ def engine(args):
     if config.get('ssl_terminator'):
         scheme = 'http'
     machine_api = '%s://%s:%s/api' % (scheme, config.get('domain'), config.get('machine_port'))
-    if args.action == 'bootstrap':
-        # create docker images for the containers using the provided build.sh script
-        # this is far from ideal, currently bootstraps dcm_convert docker image
-        build_script = os.path.join(HERE, 'code', 'apps', 'dcm_convert', 'build.sh')
-        subprocess.check_call([build_script])
-    elif args.action == 'start':
+    if args.action == 'start':
         # provide the start command for the engine, or start within a tmux session?
         # would be swanky if this detected it was in a tmux session, and creates a new pane...
-        print 'code/engine/engine.py %s local server.pem  --log_level debug' % machine_api
+        print 'code/engine/engine.py %s local persistent/keys/client-engine-local-key+cert.pem' % machine_api
+    if args.action == 'debug':
+        # provide the start command for the engine, or start within a tmux session?
+        # would be swanky if this detected it was in a tmux session, and creates a new pane...
+        print 'code/engine/engine.py %s local persistent/keys/client-engine-local-key+cert.pem --log_level debug' % machine_api
     elif args.action == 'status':
         # provide feedback about the engine? id? is it running? which API is it hitting? what's it currently doing?
         print 'scitran.py engine status not implemented'
@@ -854,7 +853,7 @@ if __name__ == '__main__':
         help='bootstrap, start and stop the engine',
         description='./scitran.py engine',
         )
-    engine_parser.add_argument('action', help='control the local engine', choices=['start', 'status', 'stop', 'bootstrap'])
+    engine_parser.add_argument('action', help='control the local engine', choices=['start', 'status', 'stop', 'debug'])
     engine_parser.set_defaults(func=engine)
 
     # do it
