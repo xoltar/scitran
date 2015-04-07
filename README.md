@@ -45,10 +45,12 @@ curl https://storage.googleapis.com/scitran-dist/release.tar | tar x scitran/bin
 Next, clone all our other source code:
 
 ```
-git clone https://github.com/scitran/api.git      scitran/code/api
-git clone https://github.com/scitran/data.git     scitran/code/data
-git clone https://github.com/scitran/sdm.git      scitran/code/sdm
-git clone https://github.com/scitran/testdata.git scitran/code/testdata
+git clone https://github.com/scitran/api.git        scitran/code/api
+git clone https://github.com/scitran/data.git       scitran/code/data
+git clone https://github.com/scitran/sdm.git        scitran/code/sdm
+git clone https://github.com/scitran/apps.git       scitran/code/apps
+git clone https://github.com/scitran/testdata.git   scitran/code/testdata
+git clone https://github.com/scitran/engine.git -b stopgap  scitran/code/engine
 
 ```
 
