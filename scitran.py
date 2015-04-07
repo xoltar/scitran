@@ -27,9 +27,10 @@ import toml
 import glob
 import docker
 import shutil
+import hashlib
 import argparse
 import subprocess
-# import requests
+import requests
 
 # enforce run location
 os.chdir(HERE)
@@ -88,7 +89,7 @@ def generate_config(mode='default'):
     oa2_id_endpoint = 'https://www.googleapis.com/plus/v1/people/me/openIdConnect'      # py api
     oa2_verify_endpoint = 'https://www.googleapis.com/oauth2/v1/tokeninfo'              # js webapp
     oa2_auth_endpoint = 'https://accounts.google.com/o/oauth2/auth'                     # js webapp
-    oa2_client_id = '528837662697-8ga3nnke42tl1hah312f7hddtl7p2uhe.apps.googleusercontent.com'  # js webapp
+    oa2_client_id = '1052740023071-n20pk8h5uepdua3r8971pc6jrf25lvee.apps.googleusercontent.com'  # js webapp
 
     if (raw_input('\nUse %s as the oauth2 provider for your users [Y/n]? ' % oa2_provider).strip().lower() or 'y') == 'n':
         is_oa2_config = False
@@ -100,9 +101,10 @@ def generate_config(mode='default'):
             print 'Register the following javascript origin and callback url with your provider:'
             print 'javascript origin: https://%s' % domain
             print 'callback url: https://%s/components/authentication/oauth2callback.html' % domain
-            oa2_client_id = raw_input('Once registered, enter OAuth2 Client ID: ').strip()
-            if oa2_provider and oa2_id_endpoint and oa2_verify_endpoint and oa2_client_id:
+            if oa2_provider and oa2_id_endpoint and oa2_verify_endpoint:
                 is_oa2_config = True
+
+    oa2_client_id = raw_input('Enter your project OAuth2 Client ID: ').strip() or oa2_client_id
 
     # scitran central
     registered = False
@@ -115,12 +117,14 @@ def generate_config(mode='default'):
     https_port = 443
     machine_port = 8080
     ssl_terminator = False
+    uwsgi_processes = 4
     if mode == 'advanced':
         print('\nExpert Mode Configurations')
         http_port = int(raw_input('http port [80]: ').strip() or http_port)
         https_port = int(raw_input('https port [443]: ').strip() or https_port)
         machine_port = int(raw_input('machine api [8080]: ').strip()or machine_port)
         ssl_terminator = (raw_input('serve behind ssl terminator? [n/Y]: ').strip().lower() == 'y')
+        uwsgi_processes = int(raw_input('number of uwsgi processes? [4]: ').strip())
         # TODO: nginx worker processes, uwsgi master/threads/processes, etc.
 
     # generage config dict
@@ -136,6 +140,7 @@ def generate_config(mode='default'):
         'https_port': https_port,
         'machine_port': machine_port,
         'ssl_terminator': ssl_terminator,
+        'uwsgi_processes': uwsgi_processes,
         'auth': {
             'provider': oa2_provider,
             'id_endpoint': oa2_id_endpoint,
@@ -242,6 +247,8 @@ def create_client_cert(drone_name):
     combined.write(key + cert)
     combined.close()
 
+    print '\ngenerated %s' % drone_combined
+
     # After signing, the CSR is useless
     os.remove(drone_csr)
 
@@ -286,6 +293,7 @@ def generate_from_template(config_template_in, config_out, nginx_image='', api_i
         'SCITRAN-HTTP-PORT': str(config['http_port']),
         'SCITRAN-HTTPS-PORT': str(config['https_port']),
         'SCITRAN-MACHINE-PORT': str(config['machine_port']),
+        'SCITRAN-UWSGI-PROCESSES': str(config['uwsgi_processes']),
         'SCITRAN-NGINX-IMAGE': nginx_image,
         'SCITRAN-API-IMAGE': api_image,
         'SCITRAN-MONGO-IMAGE': mongo_image,
@@ -341,6 +349,46 @@ def getTarball(name):
         "fullName": imageName + ":" + imageTag
     }
 
+def bootstrap_apps(args, api_name, mongo_name):
+    """Bootstrap the installation by adding an application. This should occur before bootstrapping data."""
+    config = read_config(CONFIG_FILE)
+    c = docker.Client(config['docker_url'])
+
+    # Get the running api container
+    mongo_id = None
+    nginx_id = None
+    for image in c.containers():
+        if mongo_name in image['Image']:
+            mongo_id = image['Id']
+        if 'nginx' in image['Image']:
+            nginx_id = image['Id']
+
+    # Create a container for bootstrapping
+    container = c.create_container(
+        image=api_name,
+        working_dir="/service/code/api",
+        environment={"PYTHONPATH": "/service/code/data"},
+        volumes=['/service/config', '/service/code', '/service/data'],
+        command=["./bootstrap.py", "appsinit", "mongodb://mongo/scitran", "/service/code/apps/dcm_convert", "/service/apps"]
+    )
+
+    if container["Warnings"] is not None:
+        print container["Warnings"]
+
+    # Run the container
+    # NOTE: If these volumes change, scitran.py bootstrapping must as well.
+    c.start(container=container["Id"], links={mongo_id: "mongo", nginx_id: 'nginx'}, binds={
+        os.path.join(HERE, 'api'):              {'bind': '/service/config', 'ro': False },
+        os.path.join(HERE, 'code'):             {'bind': '/service/code',   'ro': False },
+        os.path.join(HERE, 'persistent/apps'):  {'bind': '/service/apps',   'ro': False },
+    })
+
+    # Watch it run
+    result = c.logs(container=container["Id"], stream=True)
+    for line in result:
+        print line.strip()
+
+    c.remove_container(container=container["Id"])
 
 def bootstrap_data(args, api_name, mongo_name, email):
     """Bootstrap the installation by adding first user and uploading testdata."""
@@ -389,7 +437,6 @@ def bootstrap_data(args, api_name, mongo_name, email):
         print line.strip()
 
     c.remove_container(container=container["Id"])
-
 
 def instance_status():
     """Show which containers are running."""
@@ -454,12 +501,11 @@ def start(args):
 
     # copy key+cert.pem into locations that will be bind mounted to the containers
     print 'Copying key+cert.pem into api and nginx bind mount locations'
-    combinedCert = open(KEY_CERT_COMBINED_FILE).read()
     shutil.copy2(KEY_CERT_COMBINED_FILE, 'api')
     shutil.copy2(KEY_CERT_COMBINED_FILE, 'nginx')
 
     # also copy our created root CA certificate in place
-    shutil.copy2(ROOT_CERT_COMBINED_FILE, 'nginx')
+    shutil.copy2(ROOT_CERT_FILE, 'nginx')
 
     # Detect if cluster is new (has never been started before)
     newCluster = not os.path.isfile(os.path.join('persistent', 'mongo', 'mongod.lock'))
@@ -524,10 +570,22 @@ def start(args):
     # also spin up a service container
     print "Starting a service container..."
 
+    if not os.path.exists(os.path.join('persistent', 'keys', 'client-engine-local-key+cert.pem')):
+        create_client_cert('engine-local')
+    if not os.path.exists(os.path.join('persistent', 'keys', 'client-reaper-key+cert.pem')):
+        create_client_cert('reaper')
+
+    # add app, if requested by user
+    # must bootstrap apps BEFORE data, to allow jobs to be created
+    if newCluster:
+        print "adding app"
+        bootstrap_apps(args, api["fullName"], mongo["fullName"])
+
     # Add new data if requested by user
     if newCluster and email != "":
         print "Adding initial data and user " + email + "..."
         bootstrap_data(args, api["fullName"], mongo["fullName"], email)
+
 
     # check the state of the instance, are all three containers running?
     # TODO: instead of checking that three containers are running try hitting the API with requests. HEAD /api
@@ -560,8 +618,10 @@ def test(args):
     """Run various pre-launch tests"""
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
+    # might be nice to separate the combined ca-ceritifcates.crt from this test...
+    # this creates and tests the combined CA file.
     try:
-        sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "run", "nginx", "nginx", "-t", _out=process_output, _err=process_output)
+        sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "run", "nginx", "/etc/nginx/run.sh", "-t", _out=process_output, _err=process_output)
 
         # TODO: add more checks here...
 
@@ -639,6 +699,34 @@ def add_drone(args):
         create_self_certificate_authority()
 
     create_client_cert(args.drone_name)
+
+# XXX: all of this engine stuff is likely to change.
+# keep it grouped together until it settles down
+def engine(args):
+    """Control and configure this instance's engine."""
+    config = read_config(CONFIG_FILE)
+    scheme = 'https'
+    # when using an ssl terminator, the engine runs behind the SSL terminator, and could
+    # access the API over http.
+    # or the engine goes through the "front door", in which case the outer nginx must be
+    # configured to also use the instance created CA certificate.
+    if config.get('ssl_terminator'):
+        scheme = 'http'
+    machine_api = '%s://%s:%s/api' % (scheme, config.get('domain'), config.get('machine_port'))
+    if args.action == 'start':
+        # provide the start command for the engine, or start within a tmux session?
+        # would be swanky if this detected it was in a tmux session, and creates a new pane...
+        print 'code/engine/engine.py %s local persistent/keys/client-engine-local-key+cert.pem' % machine_api
+    if args.action == 'debug':
+        # provide the start command for the engine, or start within a tmux session?
+        # would be swanky if this detected it was in a tmux session, and creates a new pane...
+        print 'code/engine/engine.py %s local persistent/keys/client-engine-local-key+cert.pem --log_level debug' % machine_api
+    elif args.action == 'status':
+        # provide feedback about the engine? id? is it running? which API is it hitting? what's it currently doing?
+        print 'scitran.py engine status not implemented'
+    elif args.action == 'stop':
+        # stop the engine
+        print 'scitran.py engine stop not implemented'
 
 def purge(args):
     print '\nWARNING: PURGING'
@@ -759,6 +847,14 @@ if __name__ == '__main__':
         )
     add_drone_parser.add_argument('drone_name', help='name of drone, ex. reaper, engine001')
     add_drone_parser.set_defaults(func=add_drone)
+
+    engine_parser = subparsers.add_parser(
+        name='engine',
+        help='bootstrap, start and stop the engine',
+        description='./scitran.py engine',
+        )
+    engine_parser.add_argument('action', help='control the local engine', choices=['start', 'status', 'stop', 'debug'])
+    engine_parser.set_defaults(func=engine)
 
     # do it
     args = parser.parse_args()

@@ -20,5 +20,11 @@
       "wheel": true,
       "root": true
     }
+  ],
+  "drones": [
+    {
+      "_id": "local",
+      "type": "engine"
+    }
   ]
 }

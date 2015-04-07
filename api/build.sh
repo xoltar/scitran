@@ -4,7 +4,7 @@
 . /scitran/scripts/apt-get/update.sh
 
 # Install pip
-apt-get install -y python-dev python-pip git
+apt-get install -y python-dev python-pip git zlib1g-dev
 
 # Install python packages
 pip install numpy==1.9.0 \

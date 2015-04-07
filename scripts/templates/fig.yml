@@ -16,6 +16,7 @@ api:
         - SCITRAN-CWD/code:/service/code
         - SCITRAN-CWD/persistent/data:/service/data
         - SCITRAN-CWD/persistent/log:/service/log
+        - SCITRAN-CWD/persistent/apps:/service/apps
     ports:
         - "3031"
     links:
@@ -29,7 +30,7 @@ api:
         - --chdir=/service/code/api
         - --wsgi-file=api.wsgi
         - --master
-        - --processes=2
+        - --processes=SCITRAN-UWSGI-PROCESSES
         - --threads=2
         - --die-on-term
         - --logto=/service/log/api.log
@@ -41,6 +42,7 @@ api:
                     --api_uri SCITRAN-API-URL \
                     --db_uri mongodb://mongo/scitran \
                     --data_path /service/data \
+                    --apps_path /service/apps \
                     --ssl_cert /service/config/key+cert.pem \
                     SCITRAN-CENTRAL-URL SCITRAN-DEMO SCITRAN-INSECURE \
                     --oauth2_id_endpoint SCITRAN-AUTH-ID-URL"
