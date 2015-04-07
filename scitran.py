@@ -247,6 +247,8 @@ def create_client_cert(drone_name):
     combined.write(key + cert)
     combined.close()
 
+    print '\ngenerated %s' % drone_combined
+
     # After signing, the CSR is useless
     os.remove(drone_csr)
 
