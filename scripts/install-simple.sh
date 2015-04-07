@@ -40,6 +40,9 @@ service ssh restart
 #
 
 # Aquire containers and bin
+
+set -x
+
 cd /
 curl --progress-bar https://storage.googleapis.com/scitran-dist/release.tar | tar x scitran/bin/ scitran/containers/
 cd /scitran
@@ -56,7 +59,8 @@ service docker.io stop
 cp /scitran/bin/docker /usr/bin/docker
 service docker.io start
 
-# Install scitran
+# Install scitran - nuking venv, because it existing causes imort errors :(
+rm -rf venv
 virtualenv venv
 source venv/bin/activate
 pip install -U pip setuptools
