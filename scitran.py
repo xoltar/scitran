@@ -116,12 +116,14 @@ def generate_config(mode='default'):
     https_port = 443
     machine_port = 8080
     ssl_terminator = False
+    uwsgi_processes = 4
     if mode == 'advanced':
         print('\nExpert Mode Configurations')
         http_port = int(raw_input('http port [80]: ').strip() or http_port)
         https_port = int(raw_input('https port [443]: ').strip() or https_port)
         machine_port = int(raw_input('machine api [8080]: ').strip()or machine_port)
         ssl_terminator = (raw_input('serve behind ssl terminator? [n/Y]: ').strip().lower() == 'y')
+        uwsgi_processes = int(raw_input('number of uwsgi processes? [4]: ').strip())
         # TODO: nginx worker processes, uwsgi master/threads/processes, etc.
 
     # generage config dict
@@ -137,6 +139,7 @@ def generate_config(mode='default'):
         'https_port': https_port,
         'machine_port': machine_port,
         'ssl_terminator': ssl_terminator,
+        'uwsgi_processes': uwsgi_processes,
         'auth': {
             'provider': oa2_provider,
             'id_endpoint': oa2_id_endpoint,
@@ -287,6 +290,7 @@ def generate_from_template(config_template_in, config_out, nginx_image='', api_i
         'SCITRAN-HTTP-PORT': str(config['http_port']),
         'SCITRAN-HTTPS-PORT': str(config['https_port']),
         'SCITRAN-MACHINE-PORT': str(config['machine_port']),
+        'SCITRAN-UWSGI-PROCESSES': str(config['uwsgi_processes']),
         'SCITRAN-NGINX-IMAGE': nginx_image,
         'SCITRAN-API-IMAGE': api_image,
         'SCITRAN-MONGO-IMAGE': mongo_image,

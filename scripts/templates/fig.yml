@@ -30,7 +30,7 @@ api:
         - --chdir=/service/code/api
         - --wsgi-file=api.wsgi
         - --master
-        - --processes=2
+        - --processes=SCITRAN-UWSGI-PROCESSES
         - --threads=2
         - --die-on-term
         - --logto=/service/log/api.log
