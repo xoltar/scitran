@@ -101,9 +101,10 @@ def generate_config(mode='default'):
             print 'Register the following javascript origin and callback url with your provider:'
             print 'javascript origin: https://%s' % domain
             print 'callback url: https://%s/components/authentication/oauth2callback.html' % domain
-            oa2_client_id = raw_input('Once registered, enter OAuth2 Client ID: ').strip()
-            if oa2_provider and oa2_id_endpoint and oa2_verify_endpoint and oa2_client_id:
+            if oa2_provider and oa2_id_endpoint and oa2_verify_endpoint:
                 is_oa2_config = True
+
+    oa2_client_id = raw_input('Enter your project OAuth2 Client ID: ').strip() or oa2_client_id
 
     # scitran central
     registered = False
