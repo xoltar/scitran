@@ -89,7 +89,7 @@ def generate_config(mode='default'):
     oa2_id_endpoint = 'https://www.googleapis.com/plus/v1/people/me/openIdConnect'      # py api
     oa2_verify_endpoint = 'https://www.googleapis.com/oauth2/v1/tokeninfo'              # js webapp
     oa2_auth_endpoint = 'https://accounts.google.com/o/oauth2/auth'                     # js webapp
-    oa2_client_id = '528837662697-8ga3nnke42tl1hah312f7hddtl7p2uhe.apps.googleusercontent.com'  # js webapp
+    oa2_client_id = '1052740023071-n20pk8h5uepdua3r8971pc6jrf25lvee.apps.googleusercontent.com'  # js webapp
 
     if (raw_input('\nUse %s as the oauth2 provider for your users [Y/n]? ' % oa2_provider).strip().lower() or 'y') == 'n':
         is_oa2_config = False
