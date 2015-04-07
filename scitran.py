@@ -27,9 +27,10 @@ import toml
 import glob
 import docker
 import shutil
+import hashlib
 import argparse
 import subprocess
-# import requests
+import requests
 
 # enforce run location
 os.chdir(HERE)
@@ -341,6 +342,46 @@ def getTarball(name):
         "fullName": imageName + ":" + imageTag
     }
 
+def bootstrap_apps(args, api_name, mongo_name):
+    """Bootstrap the installation by adding an application. This should occur before bootstrapping data."""
+    config = read_config(CONFIG_FILE)
+    c = docker.Client(config['docker_url'])
+
+    # Get the running api container
+    mongo_id = None
+    nginx_id = None
+    for image in c.containers():
+        if mongo_name in image['Image']:
+            mongo_id = image['Id']
+        if 'nginx' in image['Image']:
+            nginx_id = image['Id']
+
+    # Create a container for bootstrapping
+    container = c.create_container(
+        image=api_name,
+        working_dir="/service/code/api",
+        environment={"PYTHONPATH": "/service/code/data"},
+        volumes=['/service/config', '/service/code', '/service/data'],
+        command=["./bootstrap.py", "appsinit", "mongodb://mongo/scitran", "/service/code/apps/dcm_convert", "/service/apps"]
+    )
+
+    if container["Warnings"] is not None:
+        print container["Warnings"]
+
+    # Run the container
+    # NOTE: If these volumes change, scitran.py bootstrapping must as well.
+    c.start(container=container["Id"], links={mongo_id: "mongo", nginx_id: 'nginx'}, binds={
+        os.path.join(HERE, 'api'):              {'bind': '/service/config', 'ro': False },
+        os.path.join(HERE, 'code'):             {'bind': '/service/code',   'ro': False },
+        os.path.join(HERE, 'persistent/apps'):  {'bind': '/service/apps',   'ro': False },
+    })
+
+    # Watch it run
+    result = c.logs(container=container["Id"], stream=True)
+    for line in result:
+        print line.strip()
+
+    c.remove_container(container=container["Id"])
 
 def bootstrap_data(args, api_name, mongo_name, email):
     """Bootstrap the installation by adding first user and uploading testdata."""
@@ -389,7 +430,6 @@ def bootstrap_data(args, api_name, mongo_name, email):
         print line.strip()
 
     c.remove_container(container=container["Id"])
-
 
 def instance_status():
     """Show which containers are running."""
@@ -523,10 +563,17 @@ def start(args):
     # also spin up a service container
     print "Starting a service container..."
 
+    # add app, if requested by user
+    # must bootstrap apps BEFORE data, to allow jobs to be created
+    if newCluster:
+        print "adding app"
+        bootstrap_apps(args, api["fullName"], mongo["fullName"])
+
     # Add new data if requested by user
     if newCluster and email != "":
         print "Adding initial data and user " + email + "..."
         bootstrap_data(args, api["fullName"], mongo["fullName"], email)
+
 
     # check the state of the instance, are all three containers running?
     # TODO: instead of checking that three containers are running try hitting the API with requests. HEAD /api
