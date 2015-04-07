@@ -124,7 +124,7 @@ def generate_config(mode='default'):
         https_port = int(raw_input('https port [443]: ').strip() or https_port)
         machine_port = int(raw_input('machine api [8080]: ').strip()or machine_port)
         ssl_terminator = (raw_input('serve behind ssl terminator? [n/Y]: ').strip().lower() == 'y')
-        uwsgi_processes = int(raw_input('number of uwsgi processes? [4]: ').strip())
+        uwsgi_processes = int(raw_input('number of uwsgi processes? [4]: ').strip() or uwsgi_processes)
         # TODO: nginx worker processes, uwsgi master/threads/processes, etc.
 
     # generage config dict
