@@ -570,6 +570,11 @@ def start(args):
     # also spin up a service container
     print "Starting a service container..."
 
+    if not os.path.exists(os.path.join('persistent', 'keys', 'client-engine-local-key+cert.pem')):
+        create_client_cert('engine-local')
+    if not os.path.exists(os.path.join('persistent', 'keys', 'client-reaper-key+cert.pem')):
+        create_client_cert('reaper')
+
     # add app, if requested by user
     # must bootstrap apps BEFORE data, to allow jobs to be created
     if newCluster:
