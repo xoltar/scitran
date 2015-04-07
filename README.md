@@ -8,6 +8,20 @@ First, install the following depedencies:
 - [Python2.7](https://www.python.org)
 - [Python virtualenv](http://docs.python-guide.org/en/latest/dev/virtualenvs/)
 
+Second, register your instance with an Oauth2 provider.  Instructions below are for Google.
+
+- go to https://console.developers.google.com
+- create a new project, or select an existing project
+- in the menu bar on the right side, click 'APIs & auth'
+    - in 'APIs', enable the 'Google+' API
+    - in 'Consent Screen', configure the 'Product Name' and 'email' fields
+    - in 'Credentials', create a new Client ID for a web application
+        - javascript origin: URL where you will access the webapp
+            - example: https://domain.example.com/
+        - redirect URI: Oauth2 callback URL
+            - example: https://domain.example.com/components/authentication/oauth2callback.html
+    - note the client-ID, you will be prompted for it during installation.
+
 Now, install SciTran:
 
 ```
