@@ -71,6 +71,8 @@ test -d code/api      || git clone https://github.com/scitran/api.git      code/
 test -d code/data     || git clone https://github.com/scitran/data.git     code/data
 test -d code/sdm      || git clone https://github.com/scitran/sdm.git      code/sdm
 test -d code/testdata || git clone https://github.com/scitran/testdata.git code/testdata
+test -d code/apps     || git clone https://github.com/scitran/apps.git     code/apps
+test -d code/engine   || git clone https://github.com/scitran/engine.git -b stopgap code/engine
 
 # Mongo does not like trying to memory-map files across operating systems.
 # Place the persistent folder on the vagrant host.
