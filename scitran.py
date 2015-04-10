@@ -352,16 +352,17 @@ def getTarball(name):
 def bootstrap_apps(args, api_name, mongo_name):
     """Bootstrap the installation by adding an application. This should occur before bootstrapping data."""
     config = read_config(CONFIG_FILE)
+    fig_prefix = config.get('fig_prefix')
     c = docker.Client(config['docker_url'])
 
     # Get the running api container
     mongo_id = None
     nginx_id = None
-    for image in c.containers():
-        if mongo_name in image['Image']:
-            mongo_id = image['Id']
-        if 'nginx' in image['Image']:
-            nginx_id = image['Id']
+    for container in c.containers():
+        if '/%s_mongo_1' % fig_prefix in container['Names']:
+            mongo_id = container['Id']
+        if '/%s_nginx_1' % fig_prefix in container['Names']:
+            nginx_id = container['Id']
 
     # Create a container for bootstrapping
     container = c.create_container(
@@ -397,16 +398,18 @@ def bootstrap_data(args, api_name, mongo_name, email):
         bootstrap.write(bootstrap_template.replace('SCITRAN-EMAIL', email))
 
     config = read_config(CONFIG_FILE)
+    fig_prefix = config.get('fig_prefix')
     c = docker.Client(config['docker_url'])
 
+    # TODO: MOTHA FOOK'N CONTAINER NAMES NOT IMAGE NAMES YO
     # Get the running api container
     mongo_id = None
     nginx_id = None
-    for image in c.containers():
-        if mongo_name in image['Image']:
-            mongo_id = image['Id']
-        if 'nginx' in image['Image']:
-            nginx_id = image['Id']
+    for container in c.containers():
+        if '/%s_mongo_1' % fig_prefix in container['Names']:
+            mongo_id = container['Id']
+        if '/%s_nginx_1' % fig_prefix in container['Names']:
+            nginx_id = container['Id']
 
     upload_url = 'https://nginx/api'
     if config.get('ssl_terminator'):
