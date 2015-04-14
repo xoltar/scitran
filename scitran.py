@@ -661,8 +661,9 @@ def bugreport(args):
 
 def service(args):
     """Print the command line to start a maintenance container."""
-    current_status = instance_status()
-    print 'docker -it --link scitran_mongo_1:mongo scitran-api:0 /bin/bash'
+    config = read_config(CONFIG_FILE)
+    fig_prefix = config.get('fig_prefix')
+    print 'docker -it --link %s_mongo_1:mongo %s /bin/bash' % (fig_prefix, getTarball('maintenance')['fullName'])
 
 def system(args):
     print json.dumps(system_report(), indent=4, separators=(',', ': '))
