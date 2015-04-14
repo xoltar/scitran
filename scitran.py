@@ -613,13 +613,10 @@ def stop(args):
     # only stop THIS configurations instance
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
-    docker_client = docker.Client(base_url=config['docker_url'])
-    for container in docker_client.containers():
-        for container_name in ['/%s_api_1' % fig_prefix, '/%s_mongo_1' % fig_prefix, '/%s_nginx_1' % fig_prefix]:
-            if container_name in container['Names']:
-                print "Stopping previous %s..." % container_name
-                docker_client.stop(container=container['Id'])
-    # TODO: stop should also clear out the containers that were being used
+    try:
+        fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "stop", _out=process_output, _err=process_output)
+    except sh.ErrorReturnCode as e:
+        print e
 
 def test(args):
     """Run various pre-launch tests"""
