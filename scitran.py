@@ -522,6 +522,7 @@ def start(args):
     api = getTarball('api')
     mongo = getTarball('mongo')
     nginx = getTarball('nginx')
+    maintenance = getTarball('maintenance')
 
     # Resolve docker daemon
     print "\nConnecting to docker..."
@@ -537,6 +538,8 @@ def start(args):
             foundMongo = True
         if nginx['fullName'] in image['RepoTags']:
             foundNginx = True
+        if maintenance['fullName'] in image['RepoTags']:
+            foundMaintenance = True
 
     # Resolve imported containers
     if not foundApi:
@@ -550,6 +553,10 @@ def start(args):
     if not foundNginx:
         print "Importing nginx container..."
         docker_client.import_image(src=nginx['location'], repository=nginx['name'], tag=nginx['tag'])
+
+    if not foundMaintenance:
+        print "Importing maintenance container..."
+        docker_client.import_image(src=maintenance['location'], repository=maintenance['name'], tag=maintenance['tag'])
 
     # generate config files
     generate_from_template(CONFIGJS_IN, CONFIGJS_OUT, nginx['fullName'], api['fullName'], mongo['fullName'])  # this does not need image info
@@ -569,9 +576,6 @@ def start(args):
     print "Starting scitran..."
     fig_prefix = config.get('fig_prefix')
     fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "up", "-d", _out=process_output, _err=process_output)
-
-    # also spin up a service container
-    print "Starting a service container..."
 
     if not os.path.exists(os.path.join('persistent', 'keys', 'client-engine-local-key+cert.pem')):
         create_client_cert('engine-local')
