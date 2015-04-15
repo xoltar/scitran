@@ -735,20 +735,13 @@ def engine(args):
 
 def purge(args):
     print '\nWARNING: PURGING'
-    # TODO make sure this instance's containers are stopped
-    if os.path.exists('config.json'):
-        os.remove('config.json')
-        print 'purged ./config.json'
+    config = read_config(CONFIG_FILE)
+    fig_prefix = config.get('fig_prefix')
     try:
-        shutil.rmtree('persistent')
-    except OSError as e:
-        print str(e)
-        print 'Are you `tail`ing any log files? or have any files open? please close and rerun `./scitran.py purge`'
-    else:
-        print 'purged ./persistent/'
+        fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "rm", "--force", _out=process_output, _err=process_output)
+    except sh.ErrorReturnCode as e:
+        print e
 
-    # TODO remove the containers
-    # TODO remove the images
 
 if __name__ == '__main__':
     # entrypoints
