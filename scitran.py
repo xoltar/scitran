@@ -455,6 +455,9 @@ def instance_status():
         '/%s_nginx_1' % fig_prefix: {
             'status': 'not running',
         },
+        '/%s_maintenance_1' % fig_prefix: {
+            'status': 'not running',
+        },
     }
     # TODO parse the output of docker inspect
     for container in docker.Client(config['docker_url']).containers():
