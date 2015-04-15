@@ -8,7 +8,7 @@ apt-get install -y python-dev python-pip git zlib1g-dev libjpeg-dev
 
 # Install python packages
 pip install numpy==1.9.0 \
-	webapp2 webob requests markdown jsonschema \
+	webapp2 webob requests markdown jsonschema lockfile\
 	pymongo==2.7 \
 	pillow \
 	pytz \
