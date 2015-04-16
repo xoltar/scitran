@@ -666,7 +666,7 @@ def service(args):
     """Print the command line to start a maintenance container."""
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
-    print 'docker -it --link %s_mongo_1:mongo %s /bin/bash' % (fig_prefix, getTarball('maintenance')['fullName'])
+    print 'docker run -it --rm --link %s_mongo_1:mongo -v %s/persistent/maintenance:/root %s /bin/bash' % (fig_prefix, HERE, getTarball('maintenance')['fullName'])
 
 def system(args):
     print json.dumps(system_report(), indent=4, separators=(',', ': '))
