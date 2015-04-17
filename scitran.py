@@ -613,7 +613,6 @@ def instance_status():
 def start(args):
     """Start or restart the scitran instance."""
     print '\n(re)starting the instance'
-
     # Resolve local fig binary
     if not os.path.isfile(os.path.join("bin", "fig")):
         print "Could not find fig binary in the bin folder. Are you sure your distribution download is valid?"
@@ -688,6 +687,8 @@ def start(args):
     generate_from_template(CONFIGJS_IN, CONFIGJS_OUT, nginx['fullName'], api['fullName'], mongo['fullName'])
     generate_from_template(FIG_IN, FIG_OUT, nginx['fullName'], api['fullName'], mongo['fullName'])
 
+    stop(None)  # shutdown mongo clean between starts
+
     # pick appropriate nginx configuration
     if config.get('ssl_terminator'):
         sh.cp('nginx/nginx.sslterm.conf', 'nginx/nginx.conf')
@@ -753,6 +754,7 @@ def stop(args):
         fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "stop", _out=process_output, _err=process_output)
     except sh.ErrorReturnCode as e:
         print e
+
 
 def test(args):
     """Run various pre-launch tests"""
