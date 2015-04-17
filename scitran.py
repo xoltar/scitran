@@ -742,10 +742,21 @@ def purge(args):
     print '\nWARNING: PURGING'
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
-    try:
-        fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "rm", "--force", _out=process_output, _err=process_output)
-    except sh.ErrorReturnCode as e:
-        print e
+    # removing images requires removing containers
+    # removing containers requires instance to be stopped
+    if args.containers or args.images:
+        try:
+            # --force disables fig's prompt to proceed with removal
+            fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "rm", "--force", _out=process_output, _err=process_output)
+        except sh.ErrorReturnCode as e:
+            print e
+    if args.images:
+        print 'purging images...'
+        c = docker.Client(config['docker_url'])
+        for image in c.images():
+            for repotag in image['RepoTags']:
+                if repotag.startswith('scitran-'):
+                    print 'purging image %s' % repotag
 
 
 if __name__ == '__main__':
@@ -841,6 +852,8 @@ if __name__ == '__main__':
         help='remove scitan config, persistent data, containers and images. BRUTAL!',
         description='./scitran.py purge',
         )
+    purge_parser.add_argument('--containers', help='purge containers', action='store_true')  # harmless
+    purge_parser.add_argument('--images', help='purge images', action='store_true')          # harmless
     purge_parser.set_defaults(func=purge)
 
     add_drone_parser = subparsers.add_parser(
