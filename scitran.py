@@ -678,15 +678,6 @@ def test(args):
             docker_client.stop(container=container['Id'])
             docker_client.remove_container(container=container['Id'], v=True)
 
-def inspect(args):
-    pass
-
-def build(args):
-    pass
-
-def bugreport(args):
-    pass
-
 def maintenance(args):
     """Print the command line to start a maintenance container."""
     config = read_config(CONFIG_FILE)
@@ -811,22 +802,6 @@ if __name__ == '__main__':
         description='scitran test',
         )
     test_parser.set_defaults(func=test)
-
-    # inspect
-    inspect_parser = subparsers.add_parser(
-        name='inspect',
-        help='inspect the instance',
-        description='scitran inspect',
-        )
-    inspect_parser.set_defaults(func=inspect)
-
-    # bugreport
-    bugreport_parser = subparsers.add_parser(
-        name='bugreport',
-        help='create bug report',
-        description='scitran bugreport',
-        )
-    bugreport_parser.set_defaults(func=bugreport)
 
     # system
     info_parser = subparsers.add_parser(
