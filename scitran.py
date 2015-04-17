@@ -608,7 +608,11 @@ def start(args):
             running += 1
     if running == 3:
         print "\nCheck out your running site at https://" + config['domain']
-        print "Scitran is running!"
+        r = requests.get('https://%s:%s/api' % (config['domain'], config['https_port']))
+        if r.status_code != 200:
+            print '\nSomething went wrong...'
+        else:
+            print "Scitran is running!"
     else:
         print '\nSomething went wrong...'
 
