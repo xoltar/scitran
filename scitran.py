@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Entrypoint."""
+"""Manage a SciTran installation."""
 
 
 # pip install --targ lib docker-py requests
@@ -70,6 +70,31 @@ BOOTSTRAP_OUT = os.path.join("api", "bootstrap.json")
 
 
 # building blocks
+def write_config(config_dict, config_path):
+    """Write config dictionary to json."""
+    print '\nWriting configuration to %s' % config_path
+    with open(config_path, 'w') as config_fp:
+        config_fp.write(toml.dumps(config_dict))
+
+
+def read_config(config_path):
+    """Read config dictionary from json."""
+    try:
+        with open(config_path, 'r') as config_fp:
+            return toml.loads(config_fp.read())
+    except IOError as e:
+        print 'Error reading configuration file. ' + str(e)
+        print 'Please run `scitran config` or `scitran start`'
+        sys.exit(2)
+    else:
+        print '\nLoaded configuration from %s' % config_path
+
+
+def process_output(line):
+    """Handler for formatting output from sh.Command."""
+    print line.strip()
+
+
 def generate_config(mode='default'):
     """Interactive configuration."""
     print 'Running interactice config'
@@ -192,26 +217,6 @@ def system_report():
     return system_dict
 
 
-def write_config(config_dict, config_path):
-    """Write config dictionary to json."""
-    print '\nWriting configuration to %s' % config_path
-    with open(config_path, 'w') as config_fp:
-        config_fp.write(toml.dumps(config_dict))
-
-
-def read_config(config_path):
-    """Read config dictionary from json."""
-    try:
-        with open(config_path, 'r') as config_fp:
-            return toml.loads(config_fp.read())
-    except IOError as e:
-        print 'Error reading configuration file. ' + str(e)
-        print 'Please run `scitran config` or `scitran start`'
-        sys.exit(2)
-    else:
-        print '\nLoaded configuration from %s' % config_path
-
-
 def create_self_certificate_authority(force=False):
     """Create our own certificate authority."""
     if os.path.exists(ROOT_CERT_COMBINED_FILE) and not force:
@@ -234,8 +239,14 @@ def create_self_certificate_authority(force=False):
 
 
 def create_client_cert(drone_name):
-    # each of the signed certs MUST have a complete DN, including common name
-    # however, the common name does not need to match... wait...i thought nginx did hostname matching
+    """
+    Create a new client certificate from the specified drone.
+
+    Each of the signed certs must have a complete DN to be valid, including common name.
+    However, the common name does not need to match the match with the drone.  This is a
+    reminder that nginx is verifying the certificate is signed by a trusted CA, it does not
+    performs reverse look-up to verify the hostname.
+    """
     input_ = ['\n'] * 5 + ['localhost\n'] + (['\n'] * 30)
     drone_key =      os.path.join('persistent', 'keys', 'client-%s-key.pem'      % drone_name)
     drone_cert =     os.path.join('persistent', 'keys', 'client-%s-cert.pem'     % drone_name)
@@ -264,7 +275,7 @@ def create_client_cert(drone_name):
 
 
 def create_self_signed_cert():
-    """Create selfsigned key+cert.pem."""
+    """Create self signed key+cert.pem."""
     print "Generating certificate with OpenSSL..."
 
     # Folder to hold all client certificates
@@ -359,6 +370,7 @@ def getTarball(name):
         "fullName": imageName + ":" + imageTag
     }
 
+
 def bootstrap_apps(args, api_name, mongo_name):
     """Bootstrap the installation by adding an application. This should occur before bootstrapping data."""
     config = read_config(CONFIG_FILE)
@@ -400,6 +412,7 @@ def bootstrap_apps(args, api_name, mongo_name):
         print line.strip()
 
     c.remove_container(container=container["Id"])
+
 
 def bootstrap_data(args, api_name, mongo_name, email):
     """Bootstrap the installation by adding first user and uploading testdata."""
@@ -451,6 +464,7 @@ def bootstrap_data(args, api_name, mongo_name, email):
 
     c.remove_container(container=container["Id"])
 
+
 def instance_status():
     """Show which containers are running."""
     config = read_config(CONFIG_FILE)
@@ -482,9 +496,6 @@ def instance_status():
                 status_item['Image'] = container['Image']
     return status
 
-# Handle output formatting from SH
-def process_output(line):
-    print line.strip()
 
 # targets
 def start(args):
