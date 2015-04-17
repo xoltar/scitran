@@ -12,7 +12,7 @@ pip install numpy==1.9.0 \
 	pymongo==2.7 \
 	pillow \
 	pytz \
-	git+https://github.com/scitran/pydicom.gitmirror.git@value_mismatch \
+	git+https://github.com/scitran/pydicom.git@0.9.9_value_vr_mismatch \
 	git+https://github.com/nipy/nibabel.git \
 	git+https://github.com/moloney/dcmstack.git \
 	uwsgi
