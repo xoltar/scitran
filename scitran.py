@@ -693,7 +693,7 @@ def maintenance(args):
     fig_prefix = config.get('fig_prefix')
     print 'docker run -it --rm --link %s_mongo_1:mongo -v %s/persistent/maintenance:/root %s /bin/bash' % (fig_prefix, HERE, getTarball('maintenance')['fullName'])
 
-def system(args):
+def info(args):
     print json.dumps(system_report(), indent=4, separators=(',', ': '))
 
 def status(args):
@@ -829,12 +829,12 @@ if __name__ == '__main__':
     bugreport_parser.set_defaults(func=bugreport)
 
     # system
-    system_parser = subparsers.add_parser(
-        name='system',
-        help='show system details',
-        description='scitran system',
+    info_parser = subparsers.add_parser(
+        name='info',
+        help='Print information about this Scitran Instance.',
+        description='./scitran.py info',
         )
-    system_parser.set_defaults(func=system)
+    info_parser.set_defaults(func=info)
 
     # service
     maintenance_parser = subparsers.add_parser(
