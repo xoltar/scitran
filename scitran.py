@@ -201,6 +201,11 @@ def system_report():
     sysname, nodename, release, version, machine = os.uname()
     docker_client_specs = docker.Client(config['docker_url']).version()
     _, _, ver, _, build = subprocess.check_output(['docker', '-v']).split()
+    sizes = {}
+    for l in subprocess.check_output(['du', '-h', '-d 1', 'persistent']).split('\n'):
+        if l:
+            size, path = l.split()
+            sizes[path] = size
 
     system_dict = {
         'sysname': sysname,
@@ -212,7 +217,8 @@ def system_report():
         'docker_server': {
             'ver': ver,
             'build': build,
-        }
+        },
+        'disk_usage': sizes,
     }
     return system_dict
 
@@ -690,15 +696,6 @@ def info(args):
 def status(args):
     print json.dumps(instance_status(), indent=4, separators=(',', ': '))
 
-def size(args):
-    """Display the size of the persistent storage."""
-    # TODO: convert to python
-    sizes = {}
-    for l in subprocess.check_output(['du', '-h', '-d 1', 'persistent']).split('\n'):
-        if l:
-            size, path = l.split()
-            sizes[path] = size
-    print json.dumps(sizes, indent=4, separators=(',', ': '))
 
 def config(args):
     """Rerun, view, or remove the configuration."""
@@ -826,14 +823,6 @@ if __name__ == '__main__':
         description='scitran status',
         )
     status_parser.set_defaults(func=status)
-
-    # size
-    size_parser = subparsers.add_parser(
-        name='size',
-        help='show size information',
-        description='scitran size',
-        )
-    size_parser.set_defaults(func=size)
 
     # config
     config_parser = subparsers.add_parser(
