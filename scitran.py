@@ -377,12 +377,101 @@ def getTarball(name):
     }
 
 
-def bootstrap_apps(args, api_name, mongo_name):
+def configure_json(args=None, target=None):
+    """Prepare a bootstrap.json for db bootstrapping."""
+    if target or (raw_input('Do you have a bootstrap.json you would like to use? [y/N]').strip().lower() == 'y'):
+        target = raw_input('Enter the path of your bootstrap json file: ').strip()
+        print ('bootstrap file, %s, will be copied to %s' % (target, BOOTSTRAP_OUT))
+        shutil.copy(target, BOOTSTRAP_OUT)
+    else:  # generate a bootstrap from template.
+        print 'It\'s okay.  We can make a bootstrap json file for you.'
+        email = None
+        while not email:
+            email = raw_input('Please enter a %s email address for your first user: ' % config['auth']['oa2_provider']).strip()
+        bootstrap_template = open(BOOTSTRAP_IN).read()
+        with open(BOOTSTRAP_OUT, 'w') as bootstrap:
+            bootstrap.write(bootstrap_template.replace('SCITRAN-EMAIL', email))
+
+
+def configure_certificate(args=None, target=None):
+    """Prepare the instance ssl key+cert pem file."""
+    if target or (raw_input('Do you have an existing key+cert.pem you would like to use? [y/N]').strip().lower() == 'y'):
+        target = raw_input('Enter the path of your key+cert.pem file: ').strip()
+        print ('key+cert.pem, %s, will be copied to %s' % (target, KEY_CERT_COMBINED_FILE))
+        shutil.copy(target, KEY_CERT_COMBINED_FILE)
+    else:
+        print 'Generating a self-signed SSL %s certificate...' % KEY_CERT_COMBINED_FILE
+        create_self_signed_cert()
+
+
+def configure_CA(args, target_key=None, target_cert=None, target_combined=None):
+    """Prepare the instance CA authority."""
+    has_all = (target_key and target_cert and target_combined)
+    if has_all or (raw_input('Do you have an existing CA certificate you would like to use?').strip().lower() == 'y'):
+        target_key = raw_input('Enter the path of your CA key pem: ').strip().lower()
+        target_cert = raw_input('Enter the path of your CA certificate pem: ').strip().lower()
+        target_combined = raw_input('Enter the path of your CA key+certificate pem: ').strip().lower()
+        shutil.copy(target_key, ROOT_KEY_FILE)
+        shutil.copy(target_cert, ROOT_CERT_FILE)
+        shutil.copy(target_combined, ROOT_CERT_COMBINED_FILE)
+    else:
+        print '\nGenerating a self-signed root Certificate Authority'  # TODO better wording, more helpful text
+        create_self_certificate_authority()
+
+
+def bootstrap_db(args=None):
+    """Bootstrap the database using the bootstrap.json file."""
+    config = read_config(CONFIG_FILE)
+    fig_prefix = config.get('fig_prefix')
+    c = docker.Client(config['docker_url'])
+    api_name = getTarball('api')['fullName']
+    # Get the running api container
+    mongo_id = None
+    nginx_id = None
+    for container in c.containers():
+        if '/%s_mongo_1' % fig_prefix in container['Names']:
+            mongo_id = container['Id']
+        if '/%s_nginx_1' % fig_prefix in container['Names']:
+            nginx_id = container['Id']
+
+    cmd = ["./bootstrap.py", "dbinit", "mongodb://mongo/scitran", "-j", "/service/config/bootstrap.json"]
+    if args and args.force:
+        cmd = ["./bootstrap.py", "dbinit", "mongodb://mongo/scitran", "-f", "-j", "/service/config/bootstrap.json"]
+
+    # Create a container for bootstrapping
+    container = c.create_container(
+        image=api_name,
+        working_dir="/service/code/api",
+        environment={"PYTHONPATH": "/service/code/data"},
+        volumes=['/service/config', '/service/code'],
+        command=cmd,
+    )
+
+    if container["Warnings"] is not None:
+        print container["Warnings"]
+
+    # Run the container
+    # NOTE: If these volumes change, scitran.py bootstrapping must as well.
+    c.start(container=container["Id"], links={mongo_id: "mongo", nginx_id: 'nginx'}, binds={
+        os.path.join(HERE, 'api'):         {'bind': '/service/config', 'ro': False },
+        os.path.join(HERE, 'code'):        {'bind': '/service/code',   'ro': False },
+    })
+
+    # Watch it run
+    result = c.logs(container=container["Id"], stream=True)
+    for line in result:
+        print line.strip()
+
+    c.remove_container(container=container["Id"])
+    pass
+
+
+def bootstrap_apps(args=None):
     """Bootstrap the installation by adding an application. This should occur before bootstrapping data."""
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
     c = docker.Client(config['docker_url'])
-
+    api_name = getTarball('api')['fullName']
     # Get the running api container
     mongo_id = None
     nginx_id = None
@@ -420,17 +509,13 @@ def bootstrap_apps(args, api_name, mongo_name):
     c.remove_container(container=container["Id"])
 
 
-def bootstrap_data(args, api_name, mongo_name, email):
+def bootstrap_data(args=None):
     """Bootstrap the installation by adding first user and uploading testdata."""
-    bootstrap_template = open(BOOTSTRAP_IN).read()
-    with open(BOOTSTRAP_OUT, 'w') as bootstrap:
-        bootstrap.write(bootstrap_template.replace('SCITRAN-EMAIL', email))
-
+    api_name = getTarball('api')['fullName']
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
     c = docker.Client(config['docker_url'])
 
-    # TODO: MOTHA FOOK'N CONTAINER NAMES NOT IMAGE NAMES YO
     # Get the running api container
     mongo_id = None
     nginx_id = None
@@ -444,13 +529,15 @@ def bootstrap_data(args, api_name, mongo_name, email):
     if config.get('ssl_terminator'):
         upload_url = 'http://nginx/api'
 
+    # TODO: expose upload vs sort
     # Create a container for bootstrapping
+    # command=["./bootstrap.py", "upload", "mongodb://mongo/scitran", "/service/code/testdata/", upload_url, "-n"]
     container = c.create_container(
         image=api_name,
         working_dir="/service/code/api",
         environment={"PYTHONPATH": "/service/code/data"},
         volumes=['/service/config', '/service/code'],
-        command=["./bootstrap.py", "dbinitsort", "mongodb://mongo/scitran", "/service/code/testdata/", upload_url, "-n", "-j", "/service/config/bootstrap.json"]
+        command=["./bootstrap.py", "upload", "/service/code/testdata/", upload_url, "-n"]
     )
 
     if container["Warnings"] is not None:
@@ -469,6 +556,19 @@ def bootstrap_data(args, api_name, mongo_name, email):
         print line.strip()
 
     c.remove_container(container=container["Id"])
+
+
+def bootstrap(args):
+    """Select bootstrap operation to perform."""
+    if not args.db and not args.apps and not args.data:
+        print '\nPlease specify a bootstrapping taget, --db, --apps, or --data'
+    if args.db:
+        configure_json()
+        bootstrap_db(args)
+    if args.apps:
+        bootstrap_apps(args)
+    if args.data:
+        bootstrap_data(args)
 
 
 def instance_status():
@@ -518,36 +618,6 @@ def start(args):
         write_config(generate_config(mode=args.mode), CONFIG_FILE)
     config = read_config(CONFIG_FILE)
 
-    # key+cert.pem check
-    if not os.path.exists(KEY_CERT_COMBINED_FILE):
-        print "\nNo certificate found."
-        print "You can either exit this script & save your own to " + KEY_CERT_COMBINED_FILE
-        print "or let us generate one for you."
-        raw_input("If a generated cert is OK, press enter to continue: ").strip()
-        create_self_signed_cert()
-
-    if not os.path.exists(ROOT_CERT_COMBINED_FILE):
-        print '\nNo root CA cert found. creating one' # TODO better wording, more helpful text
-        create_self_certificate_authority()
-    else:
-        print '\nExisting root CA cert found...'
-
-    # copy key+cert.pem into locations that will be bind mounted to the containers
-    print 'Copying key+cert.pem into api and nginx bind mount locations'
-    shutil.copy2(KEY_CERT_COMBINED_FILE, 'api')
-    shutil.copy2(KEY_CERT_COMBINED_FILE, 'nginx')
-
-    # also copy our created root CA certificate in place
-    shutil.copy2(ROOT_CERT_FILE, 'nginx')
-
-    # Detect if cluster is new (has never been started before)
-    newCluster = not os.path.isfile(os.path.join('persistent', 'mongo', 'mongod.lock'))
-    email = ""
-    if newCluster:
-        print "\nIt looks like this is a new scitran instance. Would you like to add some data? "
-        email = raw_input("If so, enter a valid " + config['auth']['provider'] + " email for your first user: ").strip()
-    print email
-
     # Resolve container downloads
     api = getTarball('api')
     mongo = getTarball('mongo')
@@ -588,8 +658,28 @@ def start(args):
         print "Importing maintenance container..."
         docker_client.import_image(src=maintenance['location'], repository=maintenance['name'], tag=maintenance['tag'])
 
+    # key+cert.pem check
+    if not os.path.exists(KEY_CERT_COMBINED_FILE):
+        print '\nNo %s detected' % KEY_CERT_COMBINED_FILE
+        configure_certificate()
+    print 'Copying key+cert.pem into api and nginx bind mount locations'
+    shutil.copy2(KEY_CERT_COMBINED_FILE, 'api')
+    shutil.copy2(KEY_CERT_COMBINED_FILE, 'nginx')
+
+    if not os.path.exists(ROOT_CERT_COMBINED_FILE):
+        print '\nNo %s detected' % ROOT_CERT_COMBINED_FILE
+        configure_CA()
+    print 'Copying root cert file into nginx bind mount location'
+    shutil.copy2(ROOT_CERT_FILE, 'nginx')
+    if not os.path.exists(os.path.join('persistent', 'keys', 'client-engine-local-key+cert.pem')):
+        print 'creating client certificate for a local engine.'
+        create_client_cert('engine-local')
+    if not os.path.exists(os.path.join('persistent', 'keys', 'client-reaper-key+cert.pem')):
+        print 'creating a client certificate for a reaper.'
+        create_client_cert('reaper')
+
     # generate config files
-    generate_from_template(CONFIGJS_IN, CONFIGJS_OUT, nginx['fullName'], api['fullName'], mongo['fullName'])  # this does not need image info
+    generate_from_template(CONFIGJS_IN, CONFIGJS_OUT, nginx['fullName'], api['fullName'], mongo['fullName'])
     generate_from_template(FIG_IN, FIG_OUT, nginx['fullName'], api['fullName'], mongo['fullName'])
 
     # pick appropriate nginx configuration
@@ -597,6 +687,9 @@ def start(args):
         sh.cp('nginx/nginx.sslterm.conf', 'nginx/nginx.conf')
     else:
         sh.cp('nginx/nginx.default.conf', 'nginx/nginx.conf')
+
+    # Detect if cluster is new (has never been started before)
+    newCluster = not os.path.isfile(os.path.join('persistent', 'mongo', 'mongod.lock'))
 
     # Check configuration
     print "Checking configuration..."
@@ -607,22 +700,25 @@ def start(args):
     fig_prefix = config.get('fig_prefix')
     fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "up", "-d", _out=process_output, _err=process_output)
 
-    if not os.path.exists(os.path.join('persistent', 'keys', 'client-engine-local-key+cert.pem')):
-        create_client_cert('engine-local')
-    if not os.path.exists(os.path.join('persistent', 'keys', 'client-reaper-key+cert.pem')):
-        create_client_cert('reaper')
-
     # add app, if requested by user
     # must bootstrap apps BEFORE data, to allow jobs to be created
-    if newCluster:
-        print "adding app"
-        bootstrap_apps(args, api["fullName"], mongo["fullName"])
 
     # Add new data if requested by user
-    if newCluster and email != "":
-        print "Adding initial data and user " + email + "..."
-        bootstrap_data(args, api["fullName"], mongo["fullName"], email)
+    if newCluster:
+        print '\nNew Instance Detected'
+        print "\nAdding initial users, groups and drones from bootstrap.json"
+        if not os.path.exists(BOOTSTRAP_OUT):
+            print 'No %s detected' % BOOTSTRAP_OUT
+            configure_json()
+        bootstrap_db()
 
+    if len(os.listdir(os.path.join(HERE, 'persistent', 'apps'))) == 0:
+        print '\nNo Apps detected.'
+        bootstrap_apps()
+
+    if len(glob.glob(os.path.join(HERE, 'persistent', 'data', '???'))) == 0:
+        print '\nNo data detected.'
+        bootstrap_data()
 
     # check the state of the instance, are all three containers running?
     # TODO: instead of checking that three containers are running try hitting the API with requests. HEAD /api
@@ -837,6 +933,18 @@ if __name__ == '__main__':
     config_parser.add_argument('action', help='view', choices=['rerun', 'rm', 'view'], nargs='?', default='rerun')
     config_parser.add_argument('--mode', help='configuration mode', choices=['default', 'advanced'], default='default')
     config_parser.set_defaults(func=config)
+
+    # bootstrap
+    bootstrap_parser = subparsers.add_parser(
+            name='bootstrap',
+            help='bootstrap',
+            description='./scitran.py bootstrap',
+            )
+    bootstrap_parser.add_argument('--db', help='bootstrap the users, groups and drones in database', action='store_true')
+    bootstrap_parser.add_argument('--apps', help='bootstrap an app', action='store_true')
+    bootstrap_parser.add_argument('--data', help='bootstrap data', action='store_true')
+    bootstrap_parser.add_argument('-f', '--force', help='dump existing target before bootstrapping.', action='store_true')
+    bootstrap_parser.set_defaults(func=bootstrap)
 
     purge_parser = subparsers.add_parser(
         name='purge',
