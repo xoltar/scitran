@@ -386,12 +386,17 @@ def configure_json(args=None, target=None):
         shutil.copy(target, BOOTSTRAP_OUT)
     else:  # generate a bootstrap from template.
         print 'It\'s okay.  We can make a bootstrap json file for you.'
-        email = None
-        while not email:
-            email = raw_input('Please enter a %s email address for your first user: ' % config['auth']['oa2_provider']).strip()
-        bootstrap_template = open(BOOTSTRAP_IN).read()
-        with open(BOOTSTRAP_OUT, 'w') as bootstrap:
-            bootstrap.write(bootstrap_template.replace('SCITRAN-EMAIL', email))
+        overwrite = True
+        if os.path.exists(BOOTSTRAP_OUT):
+            overwrite = raw_input('bootstrap file exists, overwrite? [y/N]:').strip().lower() == 'y'
+        if overwrite:
+            config = read_config(CONFIG_FILE)
+            email = None
+            while not email:
+                email = raw_input('Please enter a %s email address for your first user: ' % config['auth']['oa2_provider']).strip()
+            bootstrap_template = open(BOOTSTRAP_IN).read()
+            with open(BOOTSTRAP_OUT, 'w') as bootstrap:
+                bootstrap.write(bootstrap_template.replace('SCITRAN-EMAIL', email))
 
 
 def configure_certificate(args=None, target=None):
@@ -785,14 +790,17 @@ def test(args):
             docker_client.stop(container=container['Id'])
             docker_client.remove_container(container=container['Id'], v=True)
 
+
 def maintenance(args):
     """Print the command line to start a maintenance container."""
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
     print 'docker run -it --rm --link %s_mongo_1:mongo -v %s/persistent/maintenance:/root %s /bin/bash' % (fig_prefix, HERE, getTarball('maintenance')['fullName'])
 
+
 def info(args):
     print json.dumps(system_report(), indent=4, separators=(',', ': '))
+
 
 def status(args):
     print json.dumps(instance_status(), indent=4, separators=(',', ': '))
@@ -800,18 +808,18 @@ def status(args):
 
 def config(args):
     """Rerun, view, or remove the configuration."""
-    if args.action == 'rm':
-        print 'Removing config.json'
-        os.remove(CONFIG_FILE)
-    elif args.action == 'view':
-        print json.dumps(read_config(CONFIG_FILE), indent=5, separators=(',', ': '))
-    else:
-        if os.path.exists(CONFIG_FILE):
-            print 'warning: config.json exists'
-            if raw_input('Rerun config and obliterate old config.json? [y/N]: ').strip().lower() == 'y':
-                write_config(generate_config(args.mode), CONFIG_FILE)
-        else:
+    if os.path.exists(CONFIG_FILE):
+        print 'warning: config.json exists'
+        if raw_input('Rerun config and obliterate old config.json? [y/N]: ').strip().lower() == 'y':
             write_config(generate_config(args.mode), CONFIG_FILE)
+    else:
+        write_config(generate_config(args.mode), CONFIG_FILE)
+    if raw_input('Rerun bootstrap file configuration? [y/N]: ').strip().lower() == 'y':
+        configure_json()
+    if raw_input('Rerun bootstrap ssl certificate configuration? [y/N]: ').strip().lower() == 'y':
+        configure_certificate()
+    if raw_input('Rerun bootstrap certificate authority configuration? [y/N]: ').strip().lower() == 'y':
+        configure_CA()
 
 def add_drone(args):
     """Create a ssl certificate that is signed by our own certificate authority."""
@@ -931,7 +939,6 @@ if __name__ == '__main__':
         help='configure',
         description='scitran config',
         )
-    config_parser.add_argument('action', help='view', choices=['rerun', 'rm', 'view'], nargs='?', default='rerun')
     config_parser.add_argument('--mode', help='configuration mode', choices=['default', 'advanced'], default='default')
     config_parser.set_defaults(func=config)
 
