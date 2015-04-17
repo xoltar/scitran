@@ -32,6 +32,8 @@ import argparse
 import subprocess
 import requests
 
+requests.packages.urllib3.disable_warnings()
+
 # enforce run location
 os.chdir(HERE)
 
