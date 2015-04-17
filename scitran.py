@@ -687,7 +687,7 @@ def build(args):
 def bugreport(args):
     pass
 
-def service(args):
+def maintenance(args):
     """Print the command line to start a maintenance container."""
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
@@ -837,12 +837,12 @@ if __name__ == '__main__':
     system_parser.set_defaults(func=system)
 
     # service
-    service_parser = subparsers.add_parser(
-        name='service',
-        help='show status of instance',
-        description='scitran status',
+    maintenance_parser = subparsers.add_parser(
+        name='maintenance',
+        help='prints a shell command to launch a maintenance container. Can be backticked.',
+        description='./scitran.py maintenance',
         )
-    service_parser.set_defaults(func=service)
+    maintenance_parser.set_defaults(func=maintenance)
 
     # status
     status_parser = subparsers.add_parser(
