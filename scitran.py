@@ -219,6 +219,7 @@ def system_report():
             'build': build,
         },
         'disk_usage': sizes,
+        'configuration': config,
     }
     return system_dict
 
