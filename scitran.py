@@ -797,7 +797,7 @@ def maintenance(args):
     """Print the command line to start a maintenance container."""
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
-    print 'docker run -it --rm --link %s_mongo_1:mongo -v %s/persistent/maintenance:/root %s /bin/bash' % (fig_prefix, HERE, getTarball('maintenance')['fullName'])
+    print 'docker run -it --rm -e "PYTHONPATH=/service/code/data" --link %s_mongo_1:mongo -v %s/persistent/maintenance:/root -v %s/persistent:/persistent -v %s/code:/service/code %s /bin/bash' % (fig_prefix, HERE, HERE, HERE, getTarball('maintenance')['fullName'])
 
 
 def info(args):
