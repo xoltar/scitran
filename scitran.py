@@ -8,29 +8,37 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 VENV = os.path.join(HERE, 'venv/lib/python2.7/site-packages')
+venv_setup_cmds = """
+cd %s
+virtualenv venv
+source venv/bin/activate
+pip install -U pip setuptools
+pip install docker-py requests toml sh
+""" % HERE
+
 if os.path.isdir(VENV):
     sys.path.insert(0, VENV)
 else:
-    print '\n%s not found.' % VENV
-    print '\nplease run:'
-    print '    cd %s' % HERE
-    print '    virtualenv venv'
-    print '    source venv/bin/activate'
-    print '    pip install -U pip setuptools'
-    print '    pip install docker-py requests toml sh'
+    print '\nvirtualenv "venv" not found. Please run the following commands:'
+    print venv_setup_cmds
     sys.exit(1)
 
-import re
-import sh
-import json
-import toml
-import glob
-import docker
-import shutil
-import hashlib
-import argparse
-import subprocess
-import requests
+try:
+    import re
+    import sh
+    import json
+    import toml
+    import glob
+    import docker
+    import shutil
+    import hashlib
+    import argparse
+    import subprocess
+    import requests
+except ImportError as e:
+    print str(e) + '. Please run the following commands:'
+    print venv_setup_cmds
+    sys.exit(1)
 
 requests.packages.urllib3.disable_warnings()
 
