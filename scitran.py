@@ -725,7 +725,7 @@ def engine(args):
     # or the engine goes through the "front door", in which case the outer nginx must be
     # configured to also use the instance created CA certificate.
     if config.get('ssl_terminator'):
-        scheme = 'http'
+        scheme = 'https'
     machine_api = '%s://%s:%s/api' % (scheme, config.get('domain'), config.get('machine_port'))
     if args.action == 'start':
         # provide the start command for the engine, or start within a tmux session?
