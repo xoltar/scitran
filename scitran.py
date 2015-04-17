@@ -659,9 +659,13 @@ def test(args):
     # might be nice to separate the combined ca-ceritifcates.crt from this test...
     # this creates and tests the combined CA file.
     try:
+        print 'Checking that previous mongod was shutdown gracefully...'
+        mongodlock = os.path.join(HERE, 'persistent', 'mongo', 'mongod.lock')
+        if os.path.exists(mongodlock) and os.stat(mongodlock).st_size != 0:
+            print '\nUnclean mongo shutdown detected. Removing stale lock file to allow mongo to recover from journal.'
+            os.remove(mongodlock)
+        print 'Checking nginx configuration...'
         sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "run", "nginx", "/etc/nginx/run.sh", "-t", _out=process_output, _err=process_output)
-
-        # TODO: add more checks here...
 
     except sh.ErrorReturnCode as e:
         print
