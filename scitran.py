@@ -665,6 +665,7 @@ def start(args):
     foundApi = False
     foundMongo = False
     foundNginx = False
+    foundMaintenance = False
 
     for image in docker_client.images():
         if api['fullName'] in image['RepoTags']:
