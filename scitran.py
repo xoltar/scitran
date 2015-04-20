@@ -571,7 +571,8 @@ def bootstrap_data(args=None, dirpath=os.path.join(HERE, 'code', 'testdata')):
         working_dir="/service/code/api",
         environment={"PYTHONPATH": "/service/code/data"},
         volumes=['/service/config', '/service/code'],
-        command=["./bootstrap.py", "upload", "/service/code/testdata/", upload_url, "-n"]
+        # command=["./bootstrap.py", "upload", "/service/code/testdata", upload_url, "-n"]
+        command=["./bootstrap.py", "upload", "/bootstrap/%s" % data_dir, upload_url, "-n"]
     )
 
     if container["Warnings"] is not None:
@@ -580,8 +581,9 @@ def bootstrap_data(args=None, dirpath=os.path.join(HERE, 'code', 'testdata')):
     # Run the container
     # NOTE: If these volumes change, scitran.py bootstrapping must as well.
     c.start(container=container["Id"], links={mongo_id: "mongo", nginx_id: 'nginx'}, binds={
-        os.path.join(HERE, 'api'):         {'bind': '/service/config', 'ro': False },
-        os.path.join(HERE, 'code'):        {'bind': '/service/code',   'ro': False },
+        os.path.join(HERE, 'api'):          {'bind': '/service/config', 'ro': False},
+        os.path.join(HERE, 'code'):         {'bind': '/service/code',   'ro': False},
+        mount_dir:                          {'bind': '/bootstrap', 'ro': True},
     })
 
     # Watch it run
