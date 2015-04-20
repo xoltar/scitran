@@ -427,6 +427,10 @@ def configure_CA(args, target_key=None, target_cert=None, target_combined=None):
 
 def bootstrap_db(args=None):
     """Bootstrap the database using the bootstrap.json file."""
+    if not (raw_input('Would you like to bootstrap the database? [Y/n]: ').strip().lower() or 'y') == 'y':
+        print 'skipping database bootstrapping'
+        return
+
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
     c = docker.Client(config['docker_url'])
@@ -474,6 +478,10 @@ def bootstrap_db(args=None):
 
 def bootstrap_apps(args=None):
     """Bootstrap the installation by adding an application. This should occur before bootstrapping data."""
+    if not (raw_input('Would you like to bootstrap apps? [Y/n]: ').strip().lower() or 'y')== 'y':
+        print 'skipping apps bootstrapping'
+        return
+
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
     c = docker.Client(config['docker_url'])
@@ -515,12 +523,32 @@ def bootstrap_apps(args=None):
     c.remove_container(container=container["Id"])
 
 
-def bootstrap_data(args=None):
-    """Bootstrap the installation by adding first user and uploading testdata."""
+def bootstrap_data(args=None, dirpath=os.path.join(HERE, 'code', 'testdata')):
+    """
+    Bootstrap the installation by adding first user and uploading testdata.
+
+    These must take a 'path' as input.  where to get the data from.
+    """
+    if not (raw_input('Would you like to bootstrap data from %s? [Y/n]: ' % dirpath).strip().lower() or 'y') == 'y':
+        if raw_input('Would you like to bootstrap data from a different location? [y/N]: ').strip().lower() == 'y':
+            while not os.path.exists(dirpath) and not os.path.isabs(dirpath):
+                dirpath = raw_input('Enter the directory path that contains your data: ').strip().lower()
+        else:
+            print 'skipping bootstrapping data.'
+            return
+
     api_name = getTarball('api')['fullName']
     config = read_config(CONFIG_FILE)
     fig_prefix = config.get('fig_prefix')
     c = docker.Client(config['docker_url'])
+
+    if not os.path.isabs(dirpath):
+        print '\nERROR: expected absolute path to bootstrap data'
+    if not os.path.exists(dirpath):
+        print '\nERROR: dirpath %s could not be found' % dirpath
+
+    mount_dir = os.path.dirname(dirpath)
+    data_dir = os.path.basename(dirpath)
 
     # Get the running api container
     mongo_id = None
