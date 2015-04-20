@@ -869,27 +869,15 @@ def engine(args):
     """Control and configure this instance's engine."""
     config = read_config(CONFIG_FILE)
     scheme = 'https'
-    # when using an ssl terminator, the engine runs behind the SSL terminator, and could
-    # access the API over http.
-    # or the engine goes through the "front door", in which case the outer nginx must be
+    # The engine goes through the "front door (ssl terminator)", in which case the outer nginx must be
     # configured to also use the instance created CA certificate.
     if config.get('ssl_terminator'):
         scheme = 'https'
     machine_api = '%s://%s:%s/api' % (scheme, config.get('domain'), config.get('machine_port'))
     if args.action == 'start':
-        # provide the start command for the engine, or start within a tmux session?
-        # would be swanky if this detected it was in a tmux session, and creates a new pane...
         print 'code/engine/engine.py %s local persistent/keys/client-engine-local-key+cert.pem' % machine_api
-    if args.action == 'debug':
-        # provide the start command for the engine, or start within a tmux session?
-        # would be swanky if this detected it was in a tmux session, and creates a new pane...
+    elif args.action == 'debug':
         print 'code/engine/engine.py %s local persistent/keys/client-engine-local-key+cert.pem --log_level debug' % machine_api
-    elif args.action == 'status':
-        # provide feedback about the engine? id? is it running? which API is it hitting? what's it currently doing?
-        print 'scitran.py engine status not implemented'
-    elif args.action == 'stop':
-        # stop the engine
-        print 'scitran.py engine stop not implemented'
 
 def purge(args):
     print '\nWARNING: PURGING'
