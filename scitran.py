@@ -403,7 +403,7 @@ def configure_json(args=None, target=None):
             config = read_config(CONFIG_FILE)
             email = None
             while not email:
-                email = raw_input('Please enter a %s email address for your first user: ' % config['auth']['oa2_provider']).strip()
+                email = raw_input('Please enter a %s email address for your first user: ' % config['auth']['provider']).strip()
             bootstrap_template = open(BOOTSTRAP_IN).read()
             with open(BOOTSTRAP_OUT, 'w') as bootstrap:
                 bootstrap.write(bootstrap_template.replace('SCITRAN-EMAIL', email))
