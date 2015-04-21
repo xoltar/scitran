@@ -153,13 +153,17 @@ def generate_config(mode='default'):
     machine_port = 8080
     ssl_terminator = False
     uwsgi_processes = 4
+    mongo_path = 'persistent/mongo'
+    data_path = 'persistent/data'
     if mode == 'advanced':
         print('\nExpert Mode Configurations')
-        http_port = int(raw_input('http port [80]: ').strip() or http_port)
+        http_port = int(raw_input('http port [%s]: ' % http_port).strip() or http_port)
         https_port = int(raw_input('https port [443]: ').strip() or https_port)
         machine_port = int(raw_input('machine api [8080]: ').strip()or machine_port)
         ssl_terminator = (raw_input('serve behind ssl terminator? [N/y]: ').strip().lower() == 'y')
         uwsgi_processes = int(raw_input('number of uwsgi processes? [4]: ').strip() or uwsgi_processes)
+        mongo_path = raw_input('path to mongodb [%s]: ' % mongo_path).strip() or mongo_path
+        data_path = raw_input('path to data: [%s]: ' % data_path).strip() or data_path
         # TODO: nginx worker processes, uwsgi master/threads/processes, etc.
 
     # generage config dict
@@ -176,6 +180,10 @@ def generate_config(mode='default'):
         'machine_port': machine_port,
         'ssl_terminator': ssl_terminator,
         'uwsgi_processes': uwsgi_processes,
+        'storage': {
+            'mongo_path': mongo_path,
+            'data_path': data_path,
+        },
         'auth': {
             'provider': oa2_provider,
             'id_endpoint': oa2_id_endpoint,
@@ -326,6 +334,8 @@ def generate_from_template(config_template_in, config_out, nginx_image='', api_i
         'SCITRAN-API-IMAGE': api_image,
         'SCITRAN-MONGO-IMAGE': mongo_image,
         'SCITRAN-CWD': HERE,
+        'SCITRAN-DATA-PATH': config['storage']['data_path'],
+        'SCITRAN-MONGO-PATH': config['storage']['mongo_path'],
         'SCITRAN-SITE-ID': config['site_id'],
         'SCITRAN-SITE-NAME': config['site_name'],
         'SCITRAN-API-URL': 'https://' + config['domain'] + ':8080' + '/api',
@@ -410,7 +420,7 @@ def configure_certificate(args=None, target=None):
         create_self_signed_cert()
 
 
-def configure_CA(args, target_key=None, target_cert=None, target_combined=None):
+def configure_CA(args=None, target_key=None, target_cert=None, target_combined=None):
     """Prepare the instance CA authority."""
     has_all = (target_key and target_cert and target_combined)
     if has_all or (raw_input('Do you have an existing CA certificate you would like to use?').strip().lower() == 'y'):
@@ -727,7 +737,7 @@ def start(args):
         sh.cp('nginx/nginx.default.conf', 'nginx/nginx.conf')
 
     # Detect if cluster is new (has never been started before)
-    newCluster = not os.path.isfile(os.path.join('persistent', 'mongo', 'mongod.lock'))
+    newCluster = not os.path.isfile(os.path.join(config['storage']['mongo_path'], 'mongod.lock'))
 
     # Check configuration
     print "Checking configuration..."
@@ -754,7 +764,7 @@ def start(args):
         print '\nNo Apps detected.'
         bootstrap_apps()
 
-    if len(glob.glob(os.path.join(HERE, 'persistent', 'data', '???'))) == 0:
+    if len(glob.glob(os.path.join(config['storage']['data_path'], '???'))) == 0:
         print '\nNo data detected.'
         bootstrap_data()
 
@@ -795,7 +805,7 @@ def test(args):
     # this creates and tests the combined CA file.
     try:
         print 'Checking that previous mongod was shutdown gracefully...'
-        mongodlock = os.path.join(HERE, 'persistent', 'mongo', 'mongod.lock')
+        mongodlock = os.path.join(config['storage']['mongo_path'], 'mongod.lock')
         if os.path.exists(mongodlock) and os.stat(mongodlock).st_size != 0:
             print '\nUnclean mongo shutdown detected. Removing stale lock file to allow mongo to recover from journal.'
             os.remove(mongodlock)
