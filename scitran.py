@@ -533,16 +533,17 @@ def bootstrap_apps(args=None):
     c.remove_container(container=container["Id"])
 
 
-def bootstrap_data(args=None, dirpath=os.path.join(HERE, 'code', 'testdata')):
+def bootstrap_data(args=None, mode='upload', bootstrap_path=os.path.join(HERE, 'code', 'testdata')):
     """
-    Bootstrap the installation by adding first user and uploading testdata.
+    Upload data.
 
     These must take a 'path' as input.  where to get the data from.
     """
-    if not (raw_input('Would you like to bootstrap data from %s? [Y/n]: ' % dirpath).strip().lower() or 'y') == 'y':
+    if not (raw_input('Would you like to bootstrap data from %s? [Y/n]: ' % bootstrap_path).strip().lower() or 'y') == 'y':
         if raw_input('Would you like to bootstrap data from a different location? [y/N]: ').strip().lower() == 'y':
-            while not os.path.exists(dirpath) and not os.path.isabs(dirpath):
-                dirpath = raw_input('Enter the directory path that contains your data: ').strip().lower()
+            bootstrap_path = ''
+            while not os.path.exists(bootstrap_path) and not os.path.isabs(bootstrap_path):
+                bootstrap_path = raw_input('Enter the directory path that contains your data: ').strip().lower()
         else:
             print 'skipping bootstrapping data.'
             return
@@ -552,13 +553,10 @@ def bootstrap_data(args=None, dirpath=os.path.join(HERE, 'code', 'testdata')):
     fig_prefix = config.get('fig_prefix')
     c = docker.Client(config['docker_url'])
 
-    if not os.path.isabs(dirpath):
+    if not os.path.isabs(bootstrap_path):
         print '\nERROR: expected absolute path to bootstrap data'
-    if not os.path.exists(dirpath):
-        print '\nERROR: dirpath %s could not be found' % dirpath
-
-    mount_dir = os.path.dirname(dirpath)
-    data_dir = os.path.basename(dirpath)
+    if not os.path.exists(bootstrap_path):
+        print '\nERROR: dirpath %s could not be found' % bootstrap_path
 
     # Get the running api container
     mongo_id = None
@@ -573,16 +571,19 @@ def bootstrap_data(args=None, dirpath=os.path.join(HERE, 'code', 'testdata')):
     if config.get('ssl_terminator'):
         upload_url = 'http://nginx/api'
 
+    if mode == 'upload':
+        command = ["./bootstrap.py", "upload", "/bootstrap_path", upload_url, "-n"]
+    elif mode == 'sort':
+        command = ["./bootstrap.py", "sort", "mongodb://mongo/scitran", "/bootstrap_path", "/service/data"]
+
     # TODO: expose upload vs sort
     # Create a container for bootstrapping
-    # command=["./bootstrap.py", "upload", "mongodb://mongo/scitran", "/service/code/testdata/", upload_url, "-n"]
     container = c.create_container(
         image=api_name,
         working_dir="/service/code/api",
         environment={"PYTHONPATH": "/service/code/data"},
-        volumes=['/service/config', '/service/code'],
-        # command=["./bootstrap.py", "upload", "/service/code/testdata", upload_url, "-n"]
-        command=["./bootstrap.py", "upload", "/bootstrap/%s" % data_dir, upload_url, "-n"]
+        volumes=['/service/config', '/service/code', '/service/data', '/bootstrap_path'],
+        command=command,
     )
 
     if container["Warnings"] is not None:
@@ -593,7 +594,8 @@ def bootstrap_data(args=None, dirpath=os.path.join(HERE, 'code', 'testdata')):
     c.start(container=container["Id"], links={mongo_id: "mongo", nginx_id: 'nginx'}, binds={
         os.path.join(HERE, 'api'):          {'bind': '/service/config', 'ro': False},
         os.path.join(HERE, 'code'):         {'bind': '/service/code',   'ro': False},
-        mount_dir:                          {'bind': '/bootstrap', 'ro': True},
+        config['storage']['data_path']:     {'bind': '/service/data',   'ro': False},
+        bootstrap_path:                     {'bind': '/bootstrap_path', 'ro': False},
     })
 
     # Watch it run
