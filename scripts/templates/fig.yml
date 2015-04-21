@@ -4,7 +4,7 @@
 mongo:
     image: SCITRAN-MONGO-IMAGE
     volumes:
-        - SCITRAN-CWD/persistent/mongo:/data/db
+        - SCITRAN-MONGO-PATH:/data/db
     expose:
         - "21707"
     command: mongod
@@ -14,7 +14,7 @@ api:
     volumes:
         - SCITRAN-CWD/api:/service/config
         - SCITRAN-CWD/code:/service/code
-        - SCITRAN-CWD/persistent/data:/service/data
+        - SCITRAN-DATA-PATH:/service/data
         - SCITRAN-CWD/persistent/log:/service/log
         - SCITRAN-CWD/persistent/apps:/service/apps
     ports:
@@ -43,7 +43,7 @@ api:
                     --db_uri mongodb://mongo/scitran \
                     --data_path /service/data \
                     --apps_path /service/apps \
-                    --ssl_cert /service/config/key+cert.pem \
+                    --ssl_cert /service/config/base-key+cert.pem \
                     SCITRAN-CENTRAL-URL SCITRAN-DEMO SCITRAN-INSECURE \
                     --oauth2_id_endpoint SCITRAN-AUTH-ID-URL"
 nginx:
