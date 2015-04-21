@@ -779,7 +779,7 @@ def start(args):
             running += 1
     if running == 3:
         print "\nCheck out your running site at https://" + config['domain']
-        r = requests.get('https://%s:%s/api' % (config['domain'], config['https_port']))
+        r = requests.get('https://%s/api' % (config['domain']), verify=False)
         if r.status_code != 200:
             print '\nSomething went wrong...'
         else:
