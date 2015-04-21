@@ -897,19 +897,25 @@ def purge(args):
     fig_prefix = config.get('fig_prefix')
     # removing images requires removing containers
     # removing containers requires instance to be stopped
-    if args.containers or args.images:
+    if args.containers or args.images or args.all:
         try:
             # --force disables fig's prompt to proceed with removal
             fig = sh.Command("bin/fig")("-f", "containers/fig.yml", "-p", fig_prefix, "rm", "--force", _out=process_output, _err=process_output)
         except sh.ErrorReturnCode as e:
             print e
-    if args.images:
+    if args.images or args.all:
         print 'purging images...'
         c = docker.Client(config['docker_url'])
         for image in c.images():
             for repotag in image['RepoTags']:
                 if repotag.startswith('scitran-'):
                     print 'purging image %s' % repotag
+    if args.data or args.all:
+        print 'purging data...'
+        shutil.rmtree(config['storage']['data_path'])
+    if args.db or args.all:
+        print 'purging db...'
+        shutil.rmtree(config['storage']['mongo_path'])
 
 
 if __name__ == '__main__':
@@ -992,8 +998,11 @@ if __name__ == '__main__':
         help='remove scitan config, persistent data, containers and images. BRUTAL!',
         description='./scitran.py purge',
         )
-    purge_parser.add_argument('--containers', help='purge containers', action='store_true')  # harmless
-    purge_parser.add_argument('--images', help='purge images', action='store_true')          # harmless
+    purge_parser.add_argument('--containers', help='purge containers', action='store_true') # harmless
+    purge_parser.add_argument('--images', help='purge images', action='store_true')         # harmless
+    purge_parser.add_argument('--data', help='purge data_path', action='store_true')        # destructive
+    purge_parser.add_argument('--db', help='purge mongo_path', action='store_true')         # destructive
+    purge_parser.add_argument('--all', help='purge containers, images, data_path, and mongo_path', action='store_true')     # destructive
     purge_parser.set_defaults(func=purge)
 
     add_drone_parser = subparsers.add_parser(
