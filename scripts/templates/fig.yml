@@ -43,7 +43,7 @@ api:
                     --db_uri mongodb://mongo/scitran \
                     --data_path /service/data \
                     --apps_path /service/apps \
-                    --ssl_cert /service/config/key+cert.pem \
+                    --ssl_cert /service/config/base-key+cert.pem \
                     SCITRAN-CENTRAL-URL SCITRAN-DEMO SCITRAN-INSECURE \
                     --oauth2_id_endpoint SCITRAN-AUTH-ID-URL"
 nginx:
