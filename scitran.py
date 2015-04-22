@@ -707,6 +707,9 @@ def start(args):
         print "Importing maintenance container..."
         docker_client.import_image(src=maintenance['location'], repository=maintenance['name'], tag=maintenance['tag'])
 
+    if not os.path.exists(KEYS_FOLDER):
+        os.makedirs(KEYS_FOLDER)
+
     # key+cert.pem check
     if not os.path.exists(KEY_CERT_COMBINED_FILE):
         print '\nNo %s detected' % KEY_CERT_COMBINED_FILE
