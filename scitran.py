@@ -153,8 +153,8 @@ def generate_config(mode='default'):
     machine_port = 8080
     ssl_terminator = False
     uwsgi_processes = 4
-    mongo_path = 'persistent/mongo'
-    data_path = 'persistent/data'
+    mongo_path = os.path.join(HERE, 'persistent', 'mongo')
+    data_path = os.path.join(HERE, 'persistent', 'data')
     if mode == 'advanced':
         print('\nExpert Mode Configurations')
         http_port = int(raw_input('http port [%s]: ' % http_port).strip() or http_port)
@@ -165,6 +165,7 @@ def generate_config(mode='default'):
         mongo_path = raw_input('path to mongodb [%s]: ' % mongo_path).strip() or mongo_path
         data_path = raw_input('path to data: [%s]: ' % data_path).strip() or data_path
         # TODO: nginx worker processes, uwsgi master/threads/processes, etc.
+        # TODO: verify that mongo_path and data_path are abspath
 
     # generage config dict
     config_dict = {
