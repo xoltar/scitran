@@ -19,11 +19,9 @@ Vagrant.configure(2) do |config|
 	config.vm.box_check_update = false
 
 	# Port for humans and machines, respectively
-	config.vm.network "forwarded_port", guest: 443, host: 44300
+	config.vm.network "forwarded_port", guest: 44300, host: 44300
 	config.vm.network "forwarded_port", guest: 8080, host: 8080
-
-	# Port without SSL that redirects; disabled as it's not needed
-	# config.vm.network "forwarded_port", guest: 80, host: 8000
+	config.vm.network "forwarded_port", guest: 8000, host: 8000
 
 	# Create a private network, which allows host-only access to the machine using a specific IP.
 	config.vm.network "private_network", type: "dhcp"
