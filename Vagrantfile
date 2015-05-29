@@ -34,6 +34,8 @@ Vagrant.configure(2) do |config|
 	# Could add (owner: "root", group: "root",) or similar if needed
 	config.vm.synced_folder ".", "/scitran", mount_options: ["rw"]
 
+	config.vm.synced_folder "../gears", "/gears", mount_options: ["rw"]
+
 	config.vm.provider "virtualbox" do |vb|
 		vb.gui = false
 
