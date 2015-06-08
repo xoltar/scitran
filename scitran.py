@@ -139,7 +139,7 @@ def generate_config(mode='default'):
             if oa2_provider and oa2_id_endpoint and oa2_verify_endpoint:
                 is_oa2_config = True
 
-    oa2_client_id = raw_input('Enter your project OAuth2 Client ID: ').strip() or oa2_client_id
+    oa2_client_id = raw_input('Enter your project OAuth2 Client ID [blank for default]: ').strip() or oa2_client_id
 
     # scitran central
     registered = False
@@ -155,15 +155,17 @@ def generate_config(mode='default'):
     uwsgi_processes = 4
     mongo_path = os.path.join(HERE, 'persistent', 'mongo')
     data_path = os.path.join(HERE, 'persistent', 'data')
+    apps_path = os.path.join(HERE, 'persistent', 'apps')
     if mode == 'advanced':
         print('\nExpert Mode Configurations')
         http_port = int(raw_input('http port [%s]: ' % http_port).strip() or http_port)
         https_port = int(raw_input('https port [443]: ').strip() or https_port)
         machine_port = int(raw_input('machine api [8080]: ').strip()or machine_port)
-        ssl_terminator = (raw_input('serve behind ssl terminator? [N/y]: ').strip().lower() == 'y')
+        ssl_terminator = (raw_input('serve behind ssl terminator? [y/N]: ').strip().lower() == 'y')
         uwsgi_processes = int(raw_input('number of uwsgi processes? [4]: ').strip() or uwsgi_processes)
         mongo_path = raw_input('path to mongodb [%s]: ' % mongo_path).strip() or mongo_path
         data_path = raw_input('path to data: [%s]: ' % data_path).strip() or data_path
+        apps_path = raw_input('path to apps: [%s]: ' % apps_path).strip() or apps_path
         # TODO: nginx worker processes, uwsgi master/threads/processes, etc.
         # TODO: verify that mongo_path and data_path are abspath
 
@@ -184,6 +186,7 @@ def generate_config(mode='default'):
         'storage': {
             'mongo_path': mongo_path,
             'data_path': data_path,
+            'apps_path': apps_path,
         },
         'auth': {
             'provider': oa2_provider,
@@ -412,7 +415,7 @@ def configure_json(args=None, target=None):
 
 def configure_certificate(args=None, target=None):
     """Prepare the instance ssl key+cert pem file."""
-    if target or (raw_input('Do you have an existing key+cert.pem you would like to use? [y/N]').strip().lower() == 'y'):
+    if target or (raw_input('Do you have an existing key+cert.pem you would like to use? [y/N]: ').strip().lower() == 'y'):
         target = raw_input('Enter the path of your key+cert.pem file: ').strip()
         print ('key+cert.pem, %s, will be copied to %s' % (target, KEY_CERT_COMBINED_FILE))
         shutil.copy(target, KEY_CERT_COMBINED_FILE)
@@ -424,7 +427,7 @@ def configure_certificate(args=None, target=None):
 def configure_CA(args=None, target_key=None, target_cert=None, target_combined=None):
     """Prepare the instance CA authority."""
     has_all = (target_key and target_cert and target_combined)
-    if has_all or (raw_input('Do you have an existing CA certificate you would like to use?').strip().lower() == 'y'):
+    if has_all or (raw_input('Do you have an existing CA certificate you would like to use? [y/N]: ').strip().lower() == 'y'):
         target_key = raw_input('Enter the path of your CA key pem: ').strip().lower()
         target_cert = raw_input('Enter the path of your CA certificate pem: ').strip().lower()
         target_combined = raw_input('Enter the path of your CA key+certificate pem: ').strip().lower()
@@ -920,6 +923,9 @@ def purge(args):
     if args.db or args.all:
         print 'purging db...'
         shutil.rmtree(config['storage']['mongo_path'])
+    if args.apps or args.all:
+        print 'purging apps...'
+        shutil.rmtree(config['storage']['apps_path'])
 
 
 if __name__ == '__main__':
@@ -1006,7 +1012,8 @@ if __name__ == '__main__':
     purge_parser.add_argument('--images', help='purge images', action='store_true')         # harmless
     purge_parser.add_argument('--data', help='purge data_path', action='store_true')        # destructive
     purge_parser.add_argument('--db', help='purge mongo_path', action='store_true')         # destructive
-    purge_parser.add_argument('--all', help='purge containers, images, data_path, and mongo_path', action='store_true')     # destructive
+    purge_parser.add_argument('--apps', help='purge apps_path', action='store_true')        # destructive
+    purge_parser.add_argument('--all', help='purge containers, images, data_path, apps_path, and mongo_path', action='store_true')     # destructive
     purge_parser.set_defaults(func=purge)
 
     add_drone_parser = subparsers.add_parser(
