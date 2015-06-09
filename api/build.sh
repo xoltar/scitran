@@ -15,7 +15,8 @@ pip install numpy==1.9.0 \
 	git+https://github.com/scitran/pydicom.git@0.9.9_value_vr_mismatch \
 	git+https://github.com/nipy/nibabel.git \
 	git+https://github.com/moloney/dcmstack.git@6d49fe01235c08ae63c76fa2f3943b49c9b9832d \
-	uwsgi
+	uwsgi \
+	python-dateutil
 
 # Cleanup
 . /scitran/scripts/apt-get/clean.sh
