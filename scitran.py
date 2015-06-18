@@ -63,7 +63,7 @@ FIG_IN = os.path.join("scripts", "templates", "fig.yml")
 FIG_OUT = os.path.join("containers", "fig.yml")
 
 CONFIGJS_IN = os.path.join("scripts", "templates", "config.js")
-CONFIGJS_OUT = os.path.join("code", "sdm", "app", "config", "default", "config.js")
+CONFIGJS_OUT = os.path.join("code", "sdm", "app", "custom", "config.js")
 
 BOOTSTRAP_IN = os.path.join("scripts", "templates", "bootstrap.json")
 BOOTSTRAP_OUT = os.path.join("api", "bootstrap.json")
