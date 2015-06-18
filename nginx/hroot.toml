@@ -9,7 +9,7 @@
 	name = "scitran.github.io/nginx"
 
 	# Upstream ubuntu nginx image
-	upstream = "index.docker.io/nginx/1.7"
+	upstream = "index.docker.io/nginx/1.9"
 
 
 # Don't need to specify any extra settings here.
