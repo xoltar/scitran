@@ -356,6 +356,9 @@ def generate_from_template(config_template_in, config_out, nginx_image='', api_i
     rep = dict((re.escape(k), v) for k, v in rep.iteritems())
     pattern = re.compile("|".join(rep.keys()))
     text = None
+    outdir = os.path.dirname(config_out)
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
     with open(config_template_in, 'r') as template:
         text = pattern.sub(lambda m: rep[re.escape(m.group(0))], template.read())
         with open(config_out, 'w') as output:
